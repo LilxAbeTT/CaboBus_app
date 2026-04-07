@@ -1,0 +1,89 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Trebuchet MS", "Segoe UI", sans-serif;
+  --font-display: "Franklin Gothic Medium", "Trebuchet MS", sans-serif;
+}
+
+@layer base {
+  :root {
+    color: #113243;
+    background:
+      radial-gradient(circle at top left, rgba(45, 212, 191, 0.16), transparent 28%),
+      radial-gradient(circle at right top, rgba(251, 191, 36, 0.14), transparent 24%),
+      linear-gradient(180deg, #f8f4ea 0%, #f3f7fb 52%, #eef4f8 100%);
+    font-family: var(--font-sans);
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    color: #113243;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  button,
+  input,
+  select {
+    font: inherit;
+  }
+}
+
+@layer components {
+  .app-shell {
+    @apply mx-auto flex min-h-screen w-full max-w-7xl flex-col px-3 sm:px-6 lg:px-8;
+  }
+
+  .panel {
+    @apply rounded-[1.65rem] border border-white/70 bg-white/85 shadow-[0_22px_50px_-28px_rgba(15,35,54,0.45)] backdrop-blur sm:rounded-[2rem];
+  }
+
+  .eyebrow {
+    @apply text-xs font-semibold uppercase tracking-[0.28em] text-teal-700;
+  }
+
+  .route-catalog-button {
+    @apply rounded-[1.35rem] border border-slate-200 bg-slate-50/80 px-4 py-4 shadow-sm transition hover:border-teal-300 hover:bg-white;
+  }
+
+  .route-catalog-button--active {
+    @apply border-teal-500 bg-white shadow-[0_16px_30px_-24px_rgba(13,148,136,0.9)] ring-2 ring-teal-100;
+  }
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.leaflet-container {
+  font-family: var(--font-sans);
+  background: #dbeafe;
+}
+
+.leaflet-popup-content-wrapper {
+  border-radius: 1rem;
+}
+
+.leaflet-popup-content {
+  margin: 0.8rem 0.9rem;
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+@media (max-width: 640px) {
+  .leaflet-popup-content-wrapper {
+    max-width: 220px;
+  }
+}

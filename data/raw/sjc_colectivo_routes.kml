@@ -1,0 +1,1242 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>Transporte Colectivo San José del Cabo</name>
+    <description/>
+    <Style id="line-01579B-5456-normal">
+      <LineStyle>
+        <color>ff9b5701</color>
+        <width>5.456</width>
+      </LineStyle>
+    </Style>
+    <Style id="line-01579B-5456-highlight">
+      <LineStyle>
+        <color>ff9b5701</color>
+        <width>8.184</width>
+      </LineStyle>
+    </Style>
+    <StyleMap id="line-01579B-5456">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#line-01579B-5456-normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#line-01579B-5456-highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <Style id="line-097138-5069-normal">
+      <LineStyle>
+        <color>ff387109</color>
+        <width>5.069</width>
+      </LineStyle>
+    </Style>
+    <Style id="line-097138-5069-highlight">
+      <LineStyle>
+        <color>ff387109</color>
+        <width>7.6035</width>
+      </LineStyle>
+    </Style>
+    <StyleMap id="line-097138-5069">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#line-097138-5069-normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#line-097138-5069-highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <Style id="line-4E342E-5263-normal">
+      <LineStyle>
+        <color>ff2e344e</color>
+        <width>5.263</width>
+      </LineStyle>
+    </Style>
+    <Style id="line-4E342E-5263-highlight">
+      <LineStyle>
+        <color>ff2e344e</color>
+        <width>7.8945</width>
+      </LineStyle>
+    </Style>
+    <StyleMap id="line-4E342E-5263">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#line-4E342E-5263-normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#line-4E342E-5263-highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <Style id="line-7CB342-5456-normal">
+      <LineStyle>
+        <color>ff42b37c</color>
+        <width>5.456</width>
+      </LineStyle>
+    </Style>
+    <Style id="line-7CB342-5456-highlight">
+      <LineStyle>
+        <color>ff42b37c</color>
+        <width>8.184</width>
+      </LineStyle>
+    </Style>
+    <StyleMap id="line-7CB342-5456">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#line-7CB342-5456-normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#line-7CB342-5456-highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <Style id="line-9C27B0-5263-normal">
+      <LineStyle>
+        <color>ffb0279c</color>
+        <width>5.263</width>
+      </LineStyle>
+    </Style>
+    <Style id="line-9C27B0-5263-highlight">
+      <LineStyle>
+        <color>ffb0279c</color>
+        <width>7.8945</width>
+      </LineStyle>
+    </Style>
+    <StyleMap id="line-9C27B0-5263">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#line-9C27B0-5263-normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#line-9C27B0-5263-highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <Style id="line-A52714-4875-normal">
+      <LineStyle>
+        <color>ff1427a5</color>
+        <width>4.875</width>
+      </LineStyle>
+    </Style>
+    <Style id="line-A52714-4875-highlight">
+      <LineStyle>
+        <color>ff1427a5</color>
+        <width>7.3125</width>
+      </LineStyle>
+    </Style>
+    <StyleMap id="line-A52714-4875">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#line-A52714-4875-normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#line-A52714-4875-highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <Style id="line-AFB42B-4875-normal">
+      <LineStyle>
+        <color>ff2bb4af</color>
+        <width>4.875</width>
+      </LineStyle>
+    </Style>
+    <Style id="line-AFB42B-4875-highlight">
+      <LineStyle>
+        <color>ff2bb4af</color>
+        <width>7.3125</width>
+      </LineStyle>
+    </Style>
+    <StyleMap id="line-AFB42B-4875">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#line-AFB42B-4875-normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#line-AFB42B-4875-highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <Style id="line-FFD600-5263-normal">
+      <LineStyle>
+        <color>ff00d6ff</color>
+        <width>5.263</width>
+      </LineStyle>
+    </Style>
+    <Style id="line-FFD600-5263-highlight">
+      <LineStyle>
+        <color>ff00d6ff</color>
+        <width>7.8945</width>
+      </LineStyle>
+    </Style>
+    <StyleMap id="line-FFD600-5263">
+      <Pair>
+        <key>normal</key>
+        <styleUrl>#line-FFD600-5263-normal</styleUrl>
+      </Pair>
+      <Pair>
+        <key>highlight</key>
+        <styleUrl>#line-FFD600-5263-highlight</styleUrl>
+      </Pair>
+    </StyleMap>
+    <Folder>
+      <name>Colectivo 1</name>
+      <Placemark>
+        <name>Col. Centro San José Del Cabo - Transpeninsular, Col. Zacatal. Vista Hermosa, y Villas de Cortez.</name>
+        <description><![CDATA[Trayecto: -  Cecyt 04.<br>- Bodega Aurrera Vista Hermosa.<br>- Chedraui Zacatal.<br>- Estadio Beisbol San Jose del Cabo.<br>- IMSS No. 6.<br>- Escuela Secundaria Antonio Mijares.<br>- Coppel Manuel Doblado.<br><br><br>Inicio: 5: 45 AM<br>Finaliza: 9:35 PM<br>Frecuencia: 20 MNTS]]></description>
+        <styleUrl>#line-FFD600-5263</styleUrl>
+        <ExtendedData>
+          <Data name="Trayecto">
+            <value>-  Cecyt 04.
+- Bodega Aurrera Vista Hermosa.
+- Chedraui Zacatal.
+- Estadio Beisbol San Jose del Cabo.
+- IMSS No. 6.
+- Escuela Secundaria Antonio Mijares.
+- Coppel Manuel Doblado.
+
+</value>
+          </Data>
+          <Data name="Inicio">
+            <value>5: 45 AM</value>
+          </Data>
+          <Data name="Finaliza">
+            <value>9:35 PM</value>
+          </Data>
+          <Data name="Frecuencia">
+            <value>20 MNTS</value>
+          </Data>
+        </ExtendedData>
+        <LineString>
+          <tessellate>1</tessellate>
+          <coordinates>
+            -109.72737,23.093341,0
+            -109.727168,23.093313,0
+            -109.727143,23.09375,0
+            -109.727071,23.095169,0
+            -109.726744,23.095662,0
+            -109.726892,23.096857,0
+            -109.72712,23.098294,0
+            -109.727427,23.100262,0
+            -109.727736,23.102258,0
+            -109.728118,23.104236,0
+            -109.730396,23.103942,0
+            -109.729904,23.101002,0
+            -109.729385,23.098033,0
+            -109.731718,23.09774,0
+            -109.732159,23.100708,0
+            -109.732595,23.103681,0
+            -109.732706,23.104339,0
+            -109.732835,23.105191,0
+            -109.730581,23.105449,0
+            -109.728362,23.105725,0
+            -109.72828,23.105688,0
+            -109.727599,23.106246,0
+            -109.726905,23.106332,0
+            -109.72689,23.106228,0
+            -109.72625,23.106317,0
+            -109.724719,23.106498,0
+            -109.724753,23.105657,0
+            -109.724819,23.105144,0
+            -109.724842,23.104627,0
+            -109.724893,23.103022,0
+            -109.724501,23.100553,0
+            -109.722958,23.100857,0
+            -109.720388,23.101211,0
+            -109.719787,23.10129,0
+            -109.719081,23.101367,0
+            -109.715988,23.101689,0
+            -109.713533,23.101964,0
+            -109.713319,23.100364,0
+            -109.71319,23.099322,0
+            -109.713115,23.098715,0
+            -109.712629,23.095161,0
+            -109.709585,23.095825,0
+            -109.709082,23.093562,0
+            -109.708824,23.092887,0
+            -109.70859,23.092423,0
+            -109.707878,23.091599,0
+            -109.707465,23.091064,0
+            -109.707314,23.090633,0
+            -109.707172,23.090074,0
+            -109.707192,23.088977,0
+            -109.707393,23.084043,0
+            -109.707456,23.082963,0
+            -109.707538,23.080144,0
+            -109.707539,23.078284,0
+            -109.707296,23.0776,0
+            -109.707228,23.077437,0
+            -109.706935,23.076633,0
+            -109.706632,23.07585,0
+            -109.706377,23.075203,0
+            -109.705848,23.073968,0
+            -109.705707,23.073639,0
+            -109.705293,23.07224,0
+            -109.705176,23.071005,0
+            -109.705103,23.069839,0
+            -109.704868,23.069246,0
+            -109.704427,23.068301,0
+            -109.704258,23.067882,0
+            -109.703637,23.066343,0
+            -109.703326,23.065758,0
+            -109.702629,23.064191,0
+            -109.702458,23.063797,0
+            -109.700707,23.062991,0
+            -109.700331,23.062117,0
+            -109.700104,23.061667,0
+            -109.698737,23.061764,0
+            -109.698173,23.061807,0
+            -109.698205,23.062255,0
+            -109.697267,23.062513,0
+            -109.696328,23.062673,0
+            -109.695357,23.062824,0
+            -109.695243,23.061345,0
+            -109.695145,23.06033,0
+            -109.695013,23.059988,0
+            -109.694963,23.059693,0
+            -109.694929,23.058879,0
+            -109.694515,23.055826,0
+            -109.695831,23.055529,0
+            -109.69589,23.056848,0
+            -109.696637,23.061121,0
+            -109.698891,23.060891,0
+            -109.701825,23.060516,0
+            -109.704019,23.059627,0
+            -109.704007,23.060771,0
+            -109.703747,23.061755,0
+            -109.703378,23.062338,0
+            -109.702683,23.063261,0
+            -109.702393,23.063578,0
+          </coordinates>
+        </LineString>
+      </Placemark>
+    </Folder>
+    <Folder>
+      <name>Colectivo 2</name>
+      <Placemark>
+        <name>Col. Centro San José Del Cabo - Col. 1 de Mayo - Transpeninsular, Plaza Aramburo, Zacatal. San José Viejo, Predio La Ballena.</name>
+        <description><![CDATA[Trayecto: - Col. Ejidal Sobre Av. Israel<br>- Veterinaria Rojo.<br>- Oxxo Ballena Gris<br>- Parroquia San Judas Tadeo La Ballena.<br>- City Club<br>- Calle Forjadores.<br>- The Dog School<br>- Cobach 02<br>- Walmart Valerio Gonzalez<br>- Telmex Centro.<br><br><br>Inicio: 5:15 AM<br>Finaliza: 9:20 PM<br>Frecuencia: 10 MNTS]]></description>
+        <styleUrl>#line-9C27B0-5263</styleUrl>
+        <ExtendedData>
+          <Data name="Trayecto">
+            <value>- Col. Ejidal Sobre Av. Israel
+- Veterinaria Rojo.
+- Oxxo Ballena Gris
+- Parroquia San Judas Tadeo La Ballena.
+- City Club
+- Calle Forjadores.
+- The Dog School
+- Cobach 02
+- Walmart Valerio Gonzalez
+- Telmex Centro.
+
+</value>
+          </Data>
+          <Data name="Inicio">
+            <value>5:15 AM</value>
+          </Data>
+          <Data name="Finaliza">
+            <value>9:20 PM</value>
+          </Data>
+          <Data name="Frecuencia">
+            <value>10 MNTS</value>
+          </Data>
+        </ExtendedData>
+        <MultiGeometry>
+          <LineString>
+            <tessellate>1</tessellate>
+            <coordinates>
+              -109.695771,23.055589,0
+              -109.69579,23.056418,0
+              -109.695838,23.056955,0
+              -109.69613,23.058377,0
+              -109.696219,23.058849,0
+              -109.696353,23.059766,0
+              -109.696294,23.05983,0
+              -109.69502,23.059992,0
+              -109.694966,23.059694,0
+              -109.694929,23.058879,0
+            </coordinates>
+          </LineString>
+          <LineString>
+            <tessellate>1</tessellate>
+            <coordinates>
+              -109.694929,23.058879,0
+              -109.695061,23.058878,0
+            </coordinates>
+          </LineString>
+          <LineString>
+            <tessellate>1</tessellate>
+            <coordinates>
+              -109.694929,23.058879,0
+              -109.694919,23.058662,0
+              -109.694907,23.058422,0
+              -109.694825,23.058144,0
+              -109.694594,23.056925,0
+              -109.694476,23.055901,0
+              -109.695771,23.055589,0
+            </coordinates>
+          </LineString>
+          <LineString>
+            <tessellate>1</tessellate>
+            <coordinates>
+              -109.730494,23.138414,0
+              -109.730297,23.136723,0
+              -109.725446,23.137187,0
+              -109.72497,23.132821,0
+              -109.72417,23.132099,0
+              -109.724773,23.127859,0
+              -109.724909,23.126536,0
+              -109.731226,23.127207,0
+              -109.73171,23.123411,0
+              -109.731882,23.121937,0
+              -109.725603,23.12125,0
+              -109.725407,23.122738,0
+              -109.722253,23.122409,0
+              -109.72007,23.122159,0
+              -109.719801,23.121876,0
+              -109.718632,23.121175,0
+              -109.718736,23.119401,0
+              -109.716427,23.11902,0
+              -109.716268,23.120635,0
+              -109.711747,23.120151,0
+              -109.71185,23.119162,0
+              -109.712189,23.115501,0
+              -109.712525,23.112216,0
+              -109.712721,23.109815,0
+              -109.713534,23.10979,0
+              -109.713753,23.107987,0
+              -109.713912,23.106822,0
+              -109.714001,23.105751,0
+              -109.714023,23.105129,0
+              -109.713875,23.104165,0
+              -109.713356,23.100322,0
+              -109.713238,23.099351,0
+              -109.713011,23.09763,0
+              -109.712915,23.096904,0
+              -109.712679,23.095135,0
+              -109.709634,23.095803,0
+              -109.709161,23.09354,0
+              -109.708905,23.092865,0
+              -109.708655,23.092399,0
+              -109.708413,23.092111,0
+              -109.707916,23.09156,0
+              -109.707516,23.091037,0
+              -109.707355,23.090616,0
+              -109.707226,23.090069,0
+              -109.70725,23.088975,0
+              -109.707458,23.084026,0
+              -109.707551,23.082951,0
+              -109.707574,23.080169,0
+              -109.707589,23.07828,0
+              -109.707286,23.077427,0
+              -109.707,23.076617,0
+              -109.70673,23.075899,0
+              -109.706461,23.075194,0
+              -109.706094,23.0743,0
+              -109.705817,23.073628,0
+              -109.705384,23.072244,0
+              -109.705232,23.071002,0
+              -109.705162,23.069832,0
+              -109.70493,23.069233,0
+              -109.704496,23.068289,0
+              -109.703695,23.066327,0
+              -109.703412,23.065768,0
+              -109.702709,23.064148,0
+              -109.702575,23.063777,0
+              -109.702641,23.063356,0
+              -109.703534,23.062279,0
+              -109.703945,23.061436,0
+              -109.704082,23.060404,0
+              -109.70397,23.059677,0
+              -109.70396,23.058807,0
+              -109.703896,23.056767,0
+              -109.703738,23.055683,0
+              -109.703672,23.054059,0
+              -109.695771,23.055589,0
+            </coordinates>
+          </LineString>
+        </MultiGeometry>
+      </Placemark>
+    </Folder>
+    <Folder>
+      <name>Colectivo 3</name>
+      <Placemark>
+        <name>Col. Centro San José Del Cabo - Transpeninsular - Col. Santa Rosa - Ampliación Zacatal - Vista Hermosa.</name>
+        <description><![CDATA[Trayecto: - Blvrd. Puerto Nuevo.<br>- Mini Super Mercado del Carmen.<br>- Materiales García Calle Puebla.<br>- Oxxo Francisco Fisher.<br>- Calle Dr. Agustin Torres Pico.<br>- Calle Migriño Papeleria Cactus.<br>- Farmacia YZA Av. La Paz.<br>- Estadio Beisbol Centro.<br>- Terminal de Autobuses Valerio González<br>- Telmex Centro.<br><br><br>Inicio: 6: 00 AM<br>Finaliza: 9:00 PM<br>Frecuencia: 30 MNTS]]></description>
+        <styleUrl>#line-097138-5069</styleUrl>
+        <ExtendedData>
+          <Data name="Trayecto">
+            <value>- Blvrd. Puerto Nuevo.
+- Mini Super Mercado del Carmen.
+- Materiales García Calle Puebla.
+- Oxxo Francisco Fisher.
+- Calle Dr. Agustin Torres Pico.
+- Calle Migriño Papeleria Cactus.
+- Farmacia YZA Av. La Paz.
+- Estadio Beisbol Centro.
+- Terminal de Autobuses Valerio González
+- Telmex Centro.
+
+</value>
+          </Data>
+          <Data name="Inicio">
+            <value>6: 00 AM</value>
+          </Data>
+          <Data name="Finaliza">
+            <value>9:00 PM</value>
+          </Data>
+          <Data name="Frecuencia">
+            <value>30 MNTS</value>
+          </Data>
+        </ExtendedData>
+        <MultiGeometry>
+          <LineString>
+            <tessellate>1</tessellate>
+            <coordinates>
+              -109.695868,23.055534,0
+              -109.695868,23.055544,0
+            </coordinates>
+          </LineString>
+          <LineString>
+            <tessellate>1</tessellate>
+            <coordinates>
+              -109.695868,23.055544,0
+              -109.695817,23.056655,0
+              -109.696302,23.059568,0
+              -109.695046,23.059881,0
+              -109.694489,23.055826,0
+              -109.695868,23.055544,0
+            </coordinates>
+          </LineString>
+          <LineString>
+            <tessellate>1</tessellate>
+            <coordinates>
+              -109.695868,23.055544,0
+              -109.703589,23.053962,0
+              -109.703957,23.058414,0
+              -109.704132,23.059414,0
+              -109.704016,23.059698,0
+              -109.703888,23.061285,0
+              -109.703447,23.06226,0
+              -109.702598,23.062976,0
+              -109.702366,23.063611,0
+              -109.704938,23.069678,0
+              -109.705203,23.072076,0
+              -109.707405,23.078216,0
+              -109.707221,23.088843,0
+              -109.70827,23.088757,0
+              -109.708523,23.090242,0
+              -109.711989,23.089909,0
+              -109.712172,23.091165,0
+              -109.71291,23.090268,0
+              -109.718711,23.090781,0
+              -109.721231,23.106811,0
+              -109.720614,23.106882,0
+              -109.721483,23.112821,0
+              -109.721779,23.112966,0
+              -109.722221,23.113017,0
+              -109.722734,23.113126,0
+              -109.723547,23.112981,0
+              -109.724154,23.112928,0
+              -109.724874,23.112839,0
+              -109.724848,23.112373,0
+              -109.734884,23.110743,0
+              -109.734917,23.107244,0
+              -109.735318,23.107153,0
+              -109.736343,23.106381,0
+              -109.736612,23.106155,0
+              -109.736839,23.106062,0
+              -109.737323,23.106009,0
+              -109.737967,23.105781,0
+              -109.738168,23.105783,0
+              -109.737883,23.098619,0
+            </coordinates>
+          </LineString>
+        </MultiGeometry>
+      </Placemark>
+    </Folder>
+    <Folder>
+      <name>Colectivo 4</name>
+      <Placemark>
+        <name>Col. Centro San José Del Cabo Transpeninsular - Col. Zacatal - Vista Hermosa.</name>
+        <description><![CDATA[Trayecto: - Eco Construye Puebla.<br>- Oxxo Golondrinas.<br>- Parque Vista Hermosa.<br>-Cecyt 04.<br>-Calle Margarito Sandez.<br>-Refaccionaria Autozone Zacatal.<br>- Estadio / Hospital Saint Lukes.<br>- Terminal de Autobuses Valerio Gonzalez.<br>- Universidad Mundial.<br>- IMSS No. 6.<br>- Jardin de Niños Laura N. Cota.<br><br><br>Inicio: 5:35 AM<br>Finaliza: 9:15 PM<br>Frecuencia: 15-20 MNTS]]></description>
+        <styleUrl>#line-4E342E-5263</styleUrl>
+        <ExtendedData>
+          <Data name="Trayecto">
+            <value>- Eco Construye Puebla.
+- Oxxo Golondrinas.
+- Parque Vista Hermosa.
+-Cecyt 04.
+-Calle Margarito Sandez.
+-Refaccionaria Autozone Zacatal.
+- Estadio / Hospital Saint Lukes.
+- Terminal de Autobuses Valerio Gonzalez.
+- Universidad Mundial.
+- IMSS No. 6.
+- Jardin de Niños Laura N. Cota.
+
+</value>
+          </Data>
+          <Data name="Inicio">
+            <value>5:35 AM</value>
+          </Data>
+          <Data name="Finaliza">
+            <value>9:15 PM</value>
+          </Data>
+          <Data name="Frecuencia">
+            <value>15-20 MNTS</value>
+          </Data>
+        </ExtendedData>
+        <MultiGeometry>
+          <LineString>
+            <tessellate>1</tessellate>
+            <coordinates>
+              -109.695795,23.055609,0
+              -109.695829,23.056418,0
+              -109.695838,23.056955,0
+              -109.69613,23.058377,0
+              -109.696219,23.058849,0
+              -109.696348,23.059766,0
+              -109.696291,23.059826,0
+              -109.695027,23.059984,0
+              -109.694977,23.059689,0
+              -109.694929,23.058879,0
+              -109.694907,23.058422,0
+              -109.694825,23.058144,0
+              -109.694594,23.056925,0
+              -109.694525,23.055937,0
+              -109.695795,23.055609,0
+            </coordinates>
+          </LineString>
+          <LineString>
+            <tessellate>1</tessellate>
+            <coordinates>
+              -109.727311,23.109197,0
+              -109.73143,23.107299,0
+              -109.733005,23.10659,0
+              -109.73276,23.105198,0
+              -109.732534,23.103687,0
+              -109.732086,23.100703,0
+              -109.731648,23.097743,0
+              -109.73144,23.09627,0
+              -109.729147,23.096563,0
+              -109.728656,23.093625,0
+              -109.727089,23.093755,0
+              -109.727013,23.095152,0
+              -109.726677,23.095639,0
+              -109.726096,23.096485,0
+              -109.725621,23.096997,0
+              -109.723374,23.097311,0
+              -109.721374,23.0976,0
+              -109.719837,23.097808,0
+              -109.719252,23.097892,0
+              -109.718539,23.097989,0
+              -109.717359,23.098149,0
+              -109.716176,23.098312,0
+              -109.714391,23.098558,0
+              -109.713196,23.098731,0
+              -109.713272,23.099328,0
+              -109.713391,23.100324,0
+              -109.713615,23.101971,0
+              -109.711056,23.102273,0
+              -109.710665,23.100582,0
+              -109.709514,23.09588,0
+              -109.708965,23.093653,0
+              -109.708717,23.092907,0
+              -109.708478,23.092461,0
+              -109.707791,23.091654,0
+              -109.707354,23.091096,0
+              -109.707211,23.090661,0
+              -109.707105,23.090081,0
+              -109.707103,23.088987,0
+              -109.707313,23.084126,0
+              -109.707364,23.082951,0
+              -109.707446,23.080145,0
+              -109.707466,23.079128,0
+              -109.707464,23.078295,0
+              -109.707244,23.077615,0
+              -109.707139,23.077433,0
+              -109.706849,23.076661,0
+              -109.706262,23.075192,0
+              -109.705732,23.073957,0
+              -109.70562,23.073652,0
+              -109.705558,23.073435,0
+              -109.705225,23.072242,0
+              -109.705087,23.070947,0
+              -109.705033,23.069843,0
+              -109.704798,23.069266,0
+              -109.704358,23.068315,0
+              -109.703562,23.06638,0
+              -109.703255,23.065747,0
+              -109.702552,23.064236,0
+              -109.702355,23.063847,0
+              -109.702518,23.063298,0
+              -109.703454,23.062221,0
+              -109.703849,23.06142,0
+              -109.70397,23.060405,0
+              -109.703929,23.059688,0
+              -109.703892,23.058808,0
+              -109.703737,23.056824,0
+              -109.703604,23.055745,0
+              -109.703574,23.054095,0
+              -109.695795,23.055609,0
+            </coordinates>
+          </LineString>
+          <LineString>
+            <tessellate>1</tessellate>
+            <coordinates>
+              -109.727311,23.109197,0
+              -109.724497,23.110483,0
+              -109.72466,23.111647,0
+              -109.7249,23.112294,0
+              -109.725097,23.112272,0
+              -109.727709,23.111843,0
+              -109.727311,23.109197,0
+            </coordinates>
+          </LineString>
+        </MultiGeometry>
+      </Placemark>
+    </Folder>
+    <Folder>
+      <name>Colectivo 5</name>
+      <Placemark>
+        <name>Santa Rosa Ampliación - Fracc. Villa Bonita - Arroyo Vado San José Viejo - Boulevard Forjadores - Zacatal - Transpeninsular, Boulevard Centenario - Colonia El Rincón de La Playa.</name>
+        <description><![CDATA[Trayecto: - Blvd. Puerto Nuevo<br>- Parque Recreativo Puerto Nuevo<br>- Parque Infantil Puerto Nuevo<br>- Dr. Ernesto Chánez Chavez.<br>- Av. Baja California<br>- Plaza Aramburo Zacatal.<br>- Estadio de Beisbol San José del Cabo<br>- Av. Centenario, Residencial Flamboyan<br>- Puente Camino al Estero<br>- Escultura el Pescador.<br>- Camino Cabo Este<br>- Plaza Newport<br>- Parque Público Rincon de la Playa.<br><br><br>Inicio: 5:10 AM<br>Finaliza: 8:40 PM<br>Frecuencia: 30 MNTS]]></description>
+        <styleUrl>#line-A52714-4875</styleUrl>
+        <ExtendedData>
+          <Data name="Trayecto">
+            <value>- Blvd. Puerto Nuevo
+- Parque Recreativo Puerto Nuevo
+- Parque Infantil Puerto Nuevo
+- Dr. Ernesto Chánez Chavez.
+- Av. Baja California
+- Plaza Aramburo Zacatal.
+- Estadio de Beisbol San José del Cabo
+- Av. Centenario, Residencial Flamboyan
+- Puente Camino al Estero
+- Escultura el Pescador.
+- Camino Cabo Este
+- Plaza Newport
+- Parque Público Rincon de la Playa.
+
+</value>
+          </Data>
+          <Data name="Inicio">
+            <value>5:10 AM</value>
+          </Data>
+          <Data name="Finaliza">
+            <value>8:40 PM</value>
+          </Data>
+          <Data name="Frecuencia">
+            <value>30 MNTS</value>
+          </Data>
+        </ExtendedData>
+        <LineString>
+          <tessellate>1</tessellate>
+          <coordinates>
+            -109.740396,23.105913,0
+            -109.738955,23.105862,0
+            -109.738644,23.10593,0
+            -109.738207,23.1059,0
+            -109.738585,23.113835,0
+            -109.738783,23.11439,0
+            -109.738775,23.114799,0
+            -109.738668,23.115265,0
+            -109.738768,23.116935,0
+            -109.73918,23.116985,0
+            -109.739793,23.117168,0
+            -109.740393,23.117565,0
+            -109.740938,23.117963,0
+            -109.741,23.118092,0
+            -109.741379,23.118164,0
+            -109.741801,23.118217,0
+            -109.742359,23.118166,0
+            -109.74227,23.119398,0
+            -109.741205,23.119317,0
+            -109.741136,23.119722,0
+            -109.738798,23.119553,0
+            -109.738012,23.119505,0
+            -109.737734,23.119394,0
+            -109.737528,23.119228,0
+            -109.73706,23.118669,0
+            -109.736602,23.118358,0
+            -109.734876,23.118412,0
+            -109.734808,23.116411,0
+            -109.734651,23.116301,0
+            -109.732465,23.116146,0
+            -109.73176,23.116098,0
+            -109.730847,23.115989,0
+            -109.726325,23.115647,0
+            -109.724499,23.115154,0
+            -109.723893,23.11474,0
+            -109.722808,23.113435,0
+            -109.721482,23.112884,0
+            -109.720652,23.107045,0
+            -109.720024,23.103084,0
+            -109.719736,23.101241,0
+            -109.719199,23.097899,0
+            -109.71858,23.093895,0
+            -109.717902,23.094038,0
+            -109.715839,23.094469,0
+            -109.712933,23.09511,0
+            -109.709548,23.09585,0
+            -109.709007,23.093581,0
+            -109.708764,23.092904,0
+            -109.708518,23.092443,0
+            -109.707832,23.09163,0
+            -109.707402,23.091084,0
+            -109.707265,23.090655,0
+            -109.707135,23.090079,0
+            -109.707141,23.088982,0
+            -109.707371,23.084091,0
+            -109.707425,23.08296,0
+            -109.707526,23.080145,0
+            -109.707521,23.078287,0
+            -109.707275,23.077602,0
+            -109.707195,23.077414,0
+            -109.706913,23.076638,0
+            -109.706582,23.075794,0
+            -109.706346,23.075198,0
+            -109.70582,23.073965,0
+            -109.705683,23.073642,0
+            -109.70527,23.072242,0
+            -109.705159,23.070994,0
+            -109.705087,23.069843,0
+            -109.704851,23.069254,0
+            -109.704427,23.068328,0
+            -109.704241,23.06788,0
+            -109.703622,23.066348,0
+            -109.703305,23.065757,0
+            -109.702607,23.064202,0
+            -109.702427,23.063809,0
+            -109.700707,23.063017,0
+            -109.700025,23.06298,0
+            -109.699477,23.063058,0
+            -109.697431,23.063993,0
+            -109.696914,23.064141,0
+            -109.696418,23.06417,0
+            -109.695389,23.063826,0
+            -109.694107,23.063483,0
+            -109.693782,23.063316,0
+            -109.69356,23.063109,0
+            -109.69308,23.061943,0
+            -109.691889,23.058809,0
+            -109.690676,23.059204,0
+            -109.680741,23.059401,0
+            -109.68044,23.059164,0
+            -109.680246,23.059327,0
+            -109.680409,23.059531,0
+            -109.680363,23.061167,0
+            -109.680035,23.062458,0
+            -109.679761,23.062955,0
+            -109.679132,23.063781,0
+            -109.679033,23.065065,0
+            -109.679055,23.065602,0
+            -109.678891,23.066122,0
+            -109.678873,23.067562,0
+            -109.678137,23.068545,0
+            -109.677082,23.069113,0
+            -109.676133,23.069101,0
+            -109.675242,23.068809,0
+            -109.674967,23.068707,0
+            -109.675276,23.068033,0
+            -109.675244,23.067601,0
+            -109.674493,23.066886,0
+            -109.674401,23.066275,0
+            -109.674574,23.065527,0
+            -109.673599,23.065472,0
+            -109.672822,23.065339,0
+            -109.670695,23.065029,0
+            -109.669632,23.065223,0
+            -109.668232,23.065257,0
+            -109.668415,23.065578,0
+            -109.668544,23.065883,0
+            -109.668755,23.066527,0
+            -109.668913,23.067066,0
+            -109.66925,23.068053,0
+            -109.666798,23.06872,0
+          </coordinates>
+        </LineString>
+      </Placemark>
+    </Folder>
+    <Folder>
+      <name>Colectivo 6</name>
+      <Placemark>
+        <name>Villa Bonita - Fracc. Villa Bonita - Ampliación Zacatal - Calle Ernesto Aramburo - Transpeninsular - Glorieta Fonatur - Corredor Turístico.</name>
+        <description><![CDATA[Trayecto: - Oxxo Puerto Nuevo.<br>- Blvd. Puerto Nuevo.<br>- Calle Ernesto Arámburo.<br>- Parroquia de la Sagrada Familia.<br>- Refaccionaria Autozone.<br>- Plaza Bugambilias.<br>- Walmart Valerio Gonzalez.<br>- Universidad Mundial.<br>- Paseo Malecón de San Jose.<br>- Zona Hotelera San José del Cabo.<br>- City Market Paseo del Estero.<br><br><br>Inicio: 5:00 AM<br>Finaliza: 10:15 PM<br>Frecuencia: 10 MNTS]]></description>
+        <styleUrl>#line-AFB42B-4875</styleUrl>
+        <ExtendedData>
+          <Data name="Trayecto">
+            <value>- Oxxo Puerto Nuevo.
+- Blvd. Puerto Nuevo.
+- Calle Ernesto Arámburo.
+- Parroquia de la Sagrada Familia.
+- Refaccionaria Autozone.
+- Plaza Bugambilias.
+- Walmart Valerio Gonzalez.
+- Universidad Mundial.
+- Paseo Malecón de San Jose.
+- Zona Hotelera San José del Cabo.
+- City Market Paseo del Estero.
+
+</value>
+          </Data>
+          <Data name="Inicio">
+            <value>5:00 AM</value>
+          </Data>
+          <Data name="Finaliza">
+            <value>10:15 PM</value>
+          </Data>
+          <Data name="Frecuencia">
+            <value>10 MNTS</value>
+          </Data>
+        </ExtendedData>
+        <LineString>
+          <tessellate>1</tessellate>
+          <coordinates>
+            -109.738622,23.115246,0
+            -109.738791,23.119606,0
+            -109.737832,23.119453,0
+            -109.737013,23.11861,0
+            -109.736597,23.118346,0
+            -109.734893,23.118382,0
+            -109.734819,23.116435,0
+            -109.73486,23.110764,0
+            -109.734839,23.107457,0
+            -109.736877,23.10614,0
+            -109.737215,23.106132,0
+            -109.73751,23.105971,0
+            -109.738148,23.105868,0
+            -109.73793,23.100194,0
+            -109.734828,23.100323,0
+            -109.732138,23.100674,0
+            -109.72946,23.101032,0
+            -109.728785,23.10079,0
+            -109.728311,23.100524,0
+            -109.727767,23.100232,0
+            -109.72743,23.100284,0
+            -109.726031,23.100387,0
+            -109.723971,23.10068,0
+            -109.720386,23.101183,0
+            -109.71978,23.101267,0
+            -109.719078,23.101344,0
+            -109.71598,23.101667,0
+            -109.713595,23.101938,0
+            -109.711097,23.102232,0
+            -109.71071,23.100569,0
+            -109.709571,23.095825,0
+            -109.709041,23.093575,0
+            -109.708787,23.092894,0
+            -109.708561,23.09244,0
+            -109.708258,23.092066,0
+            -109.707854,23.091614,0
+            -109.707427,23.091072,0
+            -109.707295,23.090649,0
+            -109.707155,23.090076,0
+            -109.707165,23.088979,0
+            -109.707348,23.084124,0
+            -109.707506,23.080161,0
+            -109.707504,23.078288,0
+            -109.707268,23.077606,0
+            -109.707178,23.077421,0
+            -109.706893,23.076652,0
+            -109.706314,23.075182,0
+            -109.705662,23.073646,0
+            -109.705255,23.072238,0
+            -109.705132,23.070977,0
+            -109.70507,23.069843,0
+            -109.704835,23.069261,0
+            -109.704395,23.068316,0
+            -109.704223,23.067885,0
+            -109.703924,23.067159,0
+            -109.703596,23.066357,0
+            -109.703283,23.065754,0
+            -109.702591,23.064217,0
+            -109.702413,23.063824,0
+            -109.702566,23.063325,0
+            -109.703484,23.062251,0
+            -109.703884,23.06143,0
+            -109.704016,23.060405,0
+            -109.703958,23.059679,0
+            -109.703943,23.058806,0
+            -109.703853,23.056779,0
+            -109.703671,23.055658,0
+            -109.703628,23.054107,0
+            -109.693487,23.056066,0
+            -109.693392,23.053907,0
+            -109.692593,23.052936,0
+            -109.691598,23.048398,0
+            -109.695167,23.047073,0
+            -109.701092,23.043529,0
+            -109.703575,23.044096,0
+          </coordinates>
+        </LineString>
+      </Placemark>
+    </Folder>
+    <Folder>
+      <name>Colectivo 7</name>
+      <Placemark>
+        <name>Invi Santa Anita - Transpeninsular - Walmart - Zona Hotelera</name>
+        <description><![CDATA[Trayecto: - Santa Anita.<br>- Las Veredas.<br>- San Bernabé.<br>- City Club.<br>- Policia Tránsito Municipal.<br>- Telcel San José del Cabo.<br>-  Walmart Valerio Gonzalez.<br>- Universidad Mundial.<br>-Cementerio San José.<br>- Tortuga Bay Zona Hotelera.<br><br><br>Inicio: 6:00 AM<br>Finaliza: 9:00 PM<br>Frecuencia: 30 MNTS]]></description>
+        <styleUrl>#line-01579B-5456</styleUrl>
+        <ExtendedData>
+          <Data name="Trayecto">
+            <value>- Santa Anita.
+- Las Veredas.
+- San Bernabé.
+- City Club.
+- Policia Tránsito Municipal.
+- Telcel San José del Cabo.
+-  Walmart Valerio Gonzalez.
+- Universidad Mundial.
+-Cementerio San José.
+- Tortuga Bay Zona Hotelera.
+
+</value>
+          </Data>
+          <Data name="Inicio">
+            <value>6:00 AM</value>
+          </Data>
+          <Data name="Finaliza">
+            <value>9:00 PM</value>
+          </Data>
+          <Data name="Frecuencia">
+            <value>30 MNTS</value>
+          </Data>
+        </ExtendedData>
+        <LineString>
+          <tessellate>1</tessellate>
+          <coordinates>
+            -109.700971,23.043511,0
+            -109.697747,23.045371,0
+            -109.694353,23.047534,0
+            -109.691464,23.048309,0
+            -109.691802,23.049439,0
+            -109.692035,23.051247,0
+            -109.692295,23.052396,0
+            -109.692656,23.053233,0
+            -109.693359,23.054098,0
+            -109.693502,23.054644,0
+            -109.69334,23.056134,0
+            -109.694473,23.055877,0
+            -109.69578,23.055563,0
+            -109.703709,23.054013,0
+            -109.703767,23.055648,0
+            -109.703961,23.056764,0
+            -109.703984,23.058802,0
+            -109.703982,23.059672,0
+            -109.704037,23.060406,0
+            -109.703905,23.061434,0
+            -109.703499,23.062264,0
+            -109.70259,23.063339,0
+            -109.702509,23.063782,0
+            -109.702673,23.064173,0
+            -109.703344,23.06576,0
+            -109.703652,23.06634,0
+            -109.704444,23.068303,0
+            -109.704888,23.069237,0
+            -109.705123,23.069839,0
+            -109.705192,23.071004,0
+            -109.70532,23.072244,0
+            -109.705746,23.07363,0
+            -109.70588,23.073956,0
+            -109.706404,23.075203,0
+            -109.706679,23.07592,0
+            -109.706957,23.076628,0
+            -109.70725,23.077426,0
+            -109.707439,23.077921,0
+            -109.707558,23.078283,0
+            -109.70755,23.08019,0
+            -109.707487,23.082953,0
+            -109.707411,23.084103,0
+            -109.707211,23.088977,0
+            -109.707199,23.09007,0
+            -109.707337,23.090626,0
+            -109.70749,23.091053,0
+            -109.707901,23.09158,0
+            -109.708622,23.092407,0
+            -109.708862,23.092874,0
+            -109.709122,23.093552,0
+            -109.70962,23.095877,0
+            -109.710759,23.100558,0
+            -109.711166,23.102261,0
+            -109.712784,23.109133,0
+            -109.712755,23.109833,0
+            -109.71256,23.11222,0
+            -109.712226,23.115525,0
+            -109.712044,23.117349,0
+            -109.711811,23.120039,0
+            -109.710895,23.128317,0
+            -109.70982,23.139375,0
+            -109.708412,23.155692,0
+            -109.70801,23.159393,0
+            -109.707432,23.164237,0
+            -109.707024,23.167596,0
+            -109.706724,23.16833,0
+            -109.7059,23.169551,0
+            -109.70149,23.176189,0
+            -109.701246,23.176787,0
+            -109.701242,23.177465,0
+            -109.702133,23.180133,0
+            -109.702757,23.181689,0
+            -109.703905,23.18305,0
+            -109.705201,23.184365,0
+            -109.706158,23.185578,0
+            -109.706962,23.186924,0
+          </coordinates>
+        </LineString>
+      </Placemark>
+    </Folder>
+    <Folder>
+      <name>Colectivo 8</name>
+      <Placemark>
+        <name>Colonia Ejidal La Ballena Etapa 1 - Nueva Esperanza - Puerto Nuevo, Monte Bello - Vista Hermosa - Villas de Cortés - Santa Rosa - Transpeninsular - FONATUR.</name>
+        <description><![CDATA[Trayecto: - Col. Ejidal.<br>- Encanto Landscape.<br>- Av. Ing. Israel.<br>- Bodega Aurrera Vista Hermosa.<br>- CECYT 04.<br>- Unidad Deportiva Santa Rosa.<br>- Policía de Tránsito Municipal.<br>- Terminal de Autobuses Valerio González.<br>- Zona Hotelera San José del Cabo.<br>-  La Comer San José del Cabo.<br><br><br>Inicio: 5:00 AM<br>Finaliza: 9:00 PM<br>Frecuencia: 15-30 MNTS]]></description>
+        <styleUrl>#line-7CB342-5456</styleUrl>
+        <ExtendedData>
+          <Data name="Trayecto">
+            <value>- Col. Ejidal.
+- Encanto Landscape.
+- Av. Ing. Israel.
+- Bodega Aurrera Vista Hermosa.
+- CECYT 04.
+- Unidad Deportiva Santa Rosa.
+- Policía de Tránsito Municipal.
+- Terminal de Autobuses Valerio González.
+- Zona Hotelera San José del Cabo.
+-  La Comer San José del Cabo.
+
+</value>
+          </Data>
+          <Data name="Inicio">
+            <value>5:00 AM</value>
+          </Data>
+          <Data name="Finaliza">
+            <value>9:00 PM</value>
+          </Data>
+          <Data name="Frecuencia">
+            <value>15-30 MNTS</value>
+          </Data>
+        </ExtendedData>
+        <LineString>
+          <tessellate>1</tessellate>
+          <coordinates>
+            -109.704231,23.044252,0
+            -109.701017,23.043578,0
+            -109.695489,23.046955,0
+            -109.693973,23.047783,0
+            -109.691613,23.048356,0
+            -109.692125,23.050941,0
+            -109.692623,23.052857,0
+            -109.693668,23.054215,0
+            -109.693487,23.056066,0
+            -109.703679,23.054171,0
+            -109.703592,23.055747,0
+            -109.703712,23.056899,0
+            -109.703894,23.05881,0
+            -109.703933,23.059696,0
+            -109.703971,23.060407,0
+            -109.703846,23.061422,0
+            -109.703466,23.062211,0
+            -109.70251,23.06328,0
+            -109.702339,23.063877,0
+            -109.702544,23.064271,0
+            -109.703229,23.065752,0
+            -109.703549,23.066391,0
+            -109.704355,23.068329,0
+            -109.704789,23.06929,0
+            -109.705008,23.069851,0
+            -109.705063,23.070948,0
+            -109.705213,23.072241,0
+            -109.705706,23.073987,0
+            -109.706264,23.075216,0
+            -109.706969,23.077006,0
+            -109.707127,23.077457,0
+            -109.707242,23.077629,0
+            -109.707418,23.078185,0
+            -109.707457,23.0783,0
+            -109.707453,23.07913,0
+            -109.707425,23.080167,0
+            -109.70731,23.08414,0
+            -109.707084,23.08899,0
+            -109.708326,23.088899,0
+            -109.708361,23.089425,0
+            -109.708534,23.090425,0
+            -109.710196,23.09025,0
+            -109.712014,23.090044,0
+            -109.713121,23.089941,0
+            -109.713632,23.089224,0
+            -109.714383,23.089382,0
+            -109.71659,23.089838,0
+            -109.717438,23.090017,0
+            -109.717861,23.090146,0
+            -109.722135,23.092107,0
+            -109.723676,23.092078,0
+            -109.724878,23.09262,0
+            -109.726093,23.092912,0
+            -109.727182,23.093069,0
+            -109.727167,23.09332,0
+            -109.727141,23.093758,0
+            -109.727117,23.094326,0
+            -109.727063,23.09516,0
+            -109.726727,23.095655,0
+            -109.726158,23.096509,0
+            -109.725721,23.097032,0
+            -109.725633,23.0975,0
+            -109.725855,23.098978,0
+            -109.72607,23.100442,0
+            -109.727452,23.100324,0
+            -109.727777,23.100273,0
+            -109.728317,23.100549,0
+            -109.728791,23.100816,0
+            -109.729483,23.101062,0
+            -109.72989,23.101008,0
+            -109.73036,23.103951,0
+            -109.730823,23.10715,0
+            -109.731453,23.107299,0
+            -109.731752,23.107919,0
+            -109.731535,23.108034,0
+            -109.731682,23.111232,0
+            -109.73173,23.112342,0
+            -109.731799,23.113101,0
+            -109.731834,23.113588,0
+            -109.731786,23.113851,0
+            -109.731827,23.115158,0
+            -109.731746,23.116058,0
+            -109.732494,23.116113,0
+            -109.732476,23.116262,0
+            -109.732481,23.11672,0
+            -109.732453,23.118149,0
+            -109.732475,23.118585,0
+            -109.732556,23.119136,0
+            -109.732527,23.119174,0
+            -109.732533,23.119505,0
+            -109.732519,23.119667,0
+            -109.732467,23.119798,0
+            -109.732218,23.120143,0
+            -109.732096,23.120409,0
+            -109.732033,23.120947,0
+            -109.731954,23.121938,0
+            -109.731782,23.123413,0
+            -109.731295,23.12722,0
+            -109.73087,23.130517,0
+            -109.7307,23.131754,0
+            -109.730692,23.132013,0
+            -109.730629,23.132333,0
+            -109.73062,23.132933,0
+            -109.730617,23.132994,0
+            -109.730486,23.133288,0
+            -109.730393,23.133391,0
+            -109.730274,23.133907,0
+            -109.730038,23.134273,0
+            -109.730321,23.136723,0
+            -109.730518,23.138414,0
+            -109.730766,23.140573,0
+            -109.730314,23.140603,0
+          </coordinates>
+        </LineString>
+      </Placemark>
+    </Folder>
+  </Document>
+</kml>
