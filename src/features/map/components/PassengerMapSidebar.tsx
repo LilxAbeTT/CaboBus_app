@@ -183,13 +183,14 @@ export function PassengerMapSidebar({
   onToggleRoute: (routeId: string) => void
   onShowRouteInfo: (routeId: string) => void
 }) {
-  const hasRecommendedRoute =
-    Boolean(recommendedRoute) && permissionState === 'granted'
+  const recommendedRouteDetails =
+    permissionState === 'granted' ? recommendedRoute : null
+  const hasRecommendedRoute = recommendedRouteDetails !== null
   const recommendedDistanceLabel =
-    recommendedRoute?.distanceMeters !== null && recommendedRoute
-      ? recommendedRoute.distanceMeters <= 600
+    recommendedRouteDetails?.distanceMeters !== null && recommendedRouteDetails
+      ? recommendedRouteDetails.distanceMeters <= 600
         ? 'Muy cerca de ti'
-        : formatDistanceRange(recommendedRoute.distanceMeters)
+        : formatDistanceRange(recommendedRouteDetails.distanceMeters)
       : null
 
   return (
@@ -203,13 +204,13 @@ export function PassengerMapSidebar({
             </span>
             <p className="mt-3 font-display text-2xl text-slate-900">
               {hasRecommendedRoute
-                ? recommendedRoute.route.name
+                ? recommendedRouteDetails.route.name
                 : locationStatusCopy.title}
             </p>
           </div>
           {hasRecommendedRoute ? (
             <span className="rounded-full border border-white/80 bg-white/80 px-3 py-1 text-xs font-semibold text-slate-700 shadow-sm">
-              {getTransportTypeLabel(recommendedRoute.route.transportType)}
+              {getTransportTypeLabel(recommendedRouteDetails.route.transportType)}
             </span>
           ) : null}
         </div>
