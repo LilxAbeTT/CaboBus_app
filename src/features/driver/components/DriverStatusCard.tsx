@@ -376,7 +376,7 @@ export function DriverStatusCard({
   const [isRouteInfoOpen, setRouteInfoOpen] = useState(false)
   const [manualLat, setManualLat] = useState('')
   const [manualLng, setManualLng] = useState('')
-  const [showManualFallback, setShowManualFallback] = useState(false)
+  const [showManualFallback] = useState(false)
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
