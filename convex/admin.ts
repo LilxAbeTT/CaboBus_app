@@ -2,6 +2,10 @@ import { ConvexError, v } from 'convex/values'
 import type { Id } from './_generated/dataModel'
 import { mutation, query, type DatabaseWriter } from './_generated/server'
 import {
+  getActiveServiceDriverFields,
+  getActiveServiceVehicleFields,
+} from './lib/activeServiceSnapshot'
+import {
   hashPassword,
   normalizeEmail,
   requireAuthenticatedSession,
@@ -12,7 +16,6 @@ import {
   getOperationalStatusForService,
 } from './lib/serviceOperationalState'
 import {
-  getLatestLocationForService,
   getOpenServiceForDriver,
   getOpenServiceForVehicle,
   getOpenServices,
@@ -85,45 +88,42 @@ export const getDashboardState = query({
       db.query('vehicles').order('asc').collect(),
       getOpenServices(db),
     ])
+    const routeById = new Map(routes.map((route) => [route._id, route]))
+    const driverById = new Map(drivers.map((driver) => [driver._id, driver]))
+    const vehicleById = new Map(vehicles.map((vehicle) => [vehicle._id, vehicle]))
 
     const services = (
-      await Promise.all(
-        openServices.map(async (service) => {
-          const [vehicle, route, driver, latestLocation] = await Promise.all([
-            db.get(service.vehicleId),
-            db.get(service.routeId),
-            db.get(service.driverId),
-            getLatestLocationForService(db, service._id),
-          ])
+      openServices.map((service) => {
+        const route = routeById.get(service.routeId)
+        const driver = driverById.get(service.driverId)
+        const vehicle = vehicleById.get(service.vehicleId)
 
-          if (!vehicle || !route || !driver) {
-            return null
-          }
+        if (!route) {
+          return null
+        }
 
-          return {
-            id: service._id,
-            routeId: route._id,
-            routeName: route.name,
-            routeDirection: route.direction,
-            transportType: route.transportType ?? 'urbano',
-            vehicleId: vehicle._id,
-            unitNumber: vehicle.unitNumber,
-            vehicleLabel: vehicle.label,
-            driverId: driver._id,
-            driverName: driver.name,
-            status: service.status,
-            startedAt: service.startedAt,
-            lastSignalAt: getLastSignalAt(service, latestLocation) ?? undefined,
-            lastSignalSource: latestLocation?.source,
-            lastPosition: latestLocation?.position,
-            operationalStatus: getOperationalStatusForService({
-              activeService: service,
-              latestLocation,
-              nowMs,
-            }),
-          }
-        }),
-      )
+        return {
+          id: service._id,
+          routeId: service.routeId,
+          routeName: service.routeName ?? route.name,
+          routeDirection: service.routeDirection ?? route.direction,
+          transportType: service.routeTransportType ?? route.transportType ?? 'urbano',
+          vehicleId: service.vehicleId,
+          unitNumber: service.vehicleUnitNumber ?? vehicle?.unitNumber ?? 'Unidad',
+          vehicleLabel: service.vehicleLabel ?? vehicle?.label ?? 'Unidad activa',
+          driverId: service.driverId,
+          driverName: service.driverName ?? driver?.name ?? 'Conductor',
+          status: service.status,
+          startedAt: service.startedAt,
+          lastSignalAt: getLastSignalAt(service) ?? undefined,
+          lastSignalSource: service.lastLocationSource,
+          lastPosition: service.lastPosition,
+          operationalStatus: getOperationalStatusForService({
+            activeService: service,
+            nowMs,
+          }),
+        }
+      })
     ).filter((service) => service !== null)
 
     const routeSummaries = routes
@@ -381,6 +381,10 @@ export const updateDriver = mutation({
 
     await db.patch(driverId, patch)
 
+    if (openService) {
+      await db.patch(openService._id, getActiveServiceDriverFields({ name: name.trim() }))
+    }
+
     return {
       driverId,
     }
@@ -472,6 +476,19 @@ export const updateVehicle = mutation({
       status,
       defaultRouteId,
     })
+
+    if (openService) {
+      await db.patch(
+        openService._id,
+        getActiveServiceVehicleFields({
+          ...vehicle,
+          unitNumber: normalizedUnitNumber,
+          label: label.trim(),
+          status,
+          defaultRouteId,
+        }),
+      )
+    }
 
     return {
       vehicleId,

@@ -55,14 +55,26 @@ export default defineSchema({
     vehicleId: v.id('vehicles'),
     routeId: v.id('routes'),
     driverId: v.id('users'),
+    routeName: v.optional(v.string()),
+    routeDirection: v.optional(v.string()),
+    routeTransportType: v.optional(
+      v.union(v.literal('urbano'), v.literal('colectivo')),
+    ),
+    vehicleUnitNumber: v.optional(v.string()),
+    vehicleLabel: v.optional(v.string()),
+    driverName: v.optional(v.string()),
     status: v.union(v.literal('active'), v.literal('paused'), v.literal('completed')),
     startedAt: v.string(),
     endedAt: v.optional(v.string()),
     lastLocationUpdateAt: v.optional(v.string()),
+    lastPosition: v.optional(coordinates),
+    lastLocationSource: v.optional(v.union(v.literal('seed'), v.literal('device'))),
   })
     .index('by_status', ['status'])
     .index('by_driver', ['driverId'])
-    .index('by_vehicle', ['vehicleId']),
+    .index('by_vehicle', ['vehicleId'])
+    .index('by_driver_status', ['driverId', 'status'])
+    .index('by_vehicle_status', ['vehicleId', 'status']),
 
   locationUpdates: defineTable({
     activeServiceId: v.id('activeServices'),

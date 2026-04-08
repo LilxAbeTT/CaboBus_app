@@ -2,10 +2,6 @@ import { ConvexError } from 'convex/values'
 import type { Id } from '../_generated/dataModel'
 import type { DatabaseReader } from '../_generated/server'
 
-function isOpenServiceStatus(status: 'active' | 'paused' | 'completed') {
-  return status === 'active' || status === 'paused'
-}
-
 export async function getOpenServices(db: DatabaseReader) {
   const [activeServices, pausedServices] = await Promise.all([
     db
@@ -25,24 +21,46 @@ export async function getOpenServiceForDriver(
   db: DatabaseReader,
   driverId: Id<'users'>,
 ) {
-  const driverServices = await db
+  const activeService = await db
     .query('activeServices')
-    .withIndex('by_driver', (q) => q.eq('driverId', driverId))
-    .collect()
+    .withIndex('by_driver_status', (q) =>
+      q.eq('driverId', driverId).eq('status', 'active'),
+    )
+    .first()
 
-  return driverServices.find((service) => isOpenServiceStatus(service.status)) ?? null
+  if (activeService) {
+    return activeService
+  }
+
+  return await db
+    .query('activeServices')
+    .withIndex('by_driver_status', (q) =>
+      q.eq('driverId', driverId).eq('status', 'paused'),
+    )
+    .first()
 }
 
 export async function getOpenServiceForVehicle(
   db: DatabaseReader,
   vehicleId: Id<'vehicles'>,
 ) {
-  const vehicleServices = await db
+  const activeService = await db
     .query('activeServices')
-    .withIndex('by_vehicle', (q) => q.eq('vehicleId', vehicleId))
-    .collect()
+    .withIndex('by_vehicle_status', (q) =>
+      q.eq('vehicleId', vehicleId).eq('status', 'active'),
+    )
+    .first()
 
-  return vehicleServices.find((service) => isOpenServiceStatus(service.status)) ?? null
+  if (activeService) {
+    return activeService
+  }
+
+  return await db
+    .query('activeServices')
+    .withIndex('by_vehicle_status', (q) =>
+      q.eq('vehicleId', vehicleId).eq('status', 'paused'),
+    )
+    .first()
 }
 
 export async function getOpenServiceForSession(

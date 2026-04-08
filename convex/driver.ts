@@ -2,10 +2,13 @@ import { ConvexError, v } from 'convex/values'
 import type { Id } from './_generated/dataModel'
 import { mutation, query, type DatabaseReader } from './_generated/server'
 import { requireAuthenticatedSession, toUserSummary } from './lib/auth'
-import { getRouteSegments, toRouteSummary } from './lib/routes'
-import { getLastSignalAt } from './lib/serviceOperationalState'
 import {
-  getLatestLocationForService,
+  getActiveServiceRouteFields,
+  getActiveServiceSnapshotFields,
+} from './lib/activeServiceSnapshot'
+import { evaluateServerLocationPlausibility } from './lib/location'
+import { getRouteSegments, toRouteSummary } from './lib/routes'
+import {
   getOpenServiceForDriver,
   getOpenServiceForVehicle,
 } from './lib/services'
@@ -46,32 +49,24 @@ export const getPanelState = query({
       getOpenServiceForDriver(db, driver._id),
     ])
 
-    const vehicle = await getAssignedVehicle(
-      db,
-      driver,
-      currentService?.vehicleId,
-    )
+    const vehicle = await getAssignedVehicle(db, driver, currentService?.vehicleId)
+    const routeById = new Map(routes.map((route) => [route._id, route]))
 
     let currentServiceState = null
 
     if (currentService) {
-      const [route, latestLocation] = await Promise.all([
-        db.get(currentService.routeId),
-        getLatestLocationForService(db, currentService._id),
-      ])
+      const route = routeById.get(currentService.routeId)
 
-      if (route) {
-        currentServiceState = {
-          id: currentService._id,
-          routeId: route._id,
-          routeName: route.name,
-          status: currentService.status,
-          startedAt: currentService.startedAt,
-          lastLocationUpdateAt:
-            getLastSignalAt(currentService, latestLocation) ?? undefined,
-          lastPosition: latestLocation?.position,
-          lastLocationSource: latestLocation?.source,
-        }
+      currentServiceState = {
+        id: currentService._id,
+        routeId: currentService.routeId,
+        routeName: currentService.routeName ?? route?.name ?? 'Ruta activa',
+        status: currentService.status,
+        startedAt: currentService.startedAt,
+        lastLocationUpdateAt: currentService.lastLocationUpdateAt ?? undefined,
+        lastPosition: currentService.lastPosition,
+        lastLocationSource: currentService.lastLocationSource,
+        operationalStatus: undefined,
       }
     }
 
@@ -143,23 +138,16 @@ export const activateService = mutation({
       vehicleId: vehicle._id,
       routeId: route._id,
       driverId: driver._id,
+      ...getActiveServiceSnapshotFields({
+        route,
+        vehicle,
+        driver,
+      }),
       status: 'active',
       startedAt,
-      lastLocationUpdateAt: startedAt,
-    })
-
-    const initialPosition = getRouteSegments(route)[0]?.[0] ?? {
-      lat: 23.058,
-      lng: -109.701,
-    }
-
-    await db.insert('locationUpdates', {
-      activeServiceId: serviceId,
-      vehicleId: vehicle._id,
-      routeId: route._id,
-      position: initialPosition,
-      recordedAt: startedAt,
-      source: 'seed',
+      lastLocationUpdateAt: undefined,
+      lastPosition: undefined,
+      lastLocationSource: undefined,
     })
 
     await db.patch(vehicle._id, {
@@ -272,8 +260,9 @@ export const addLocationUpdate = mutation({
     sessionToken: v.string(),
     lat: v.number(),
     lng: v.number(),
+    accuracyMeters: v.optional(v.number()),
   },
-  handler: async ({ db }, { sessionToken, lat, lng }) => {
+  handler: async ({ db }, { sessionToken, lat, lng, accuracyMeters }) => {
     const { user: driver } = await requireAuthenticatedSession(
       db,
       sessionToken,
@@ -293,6 +282,24 @@ export const addLocationUpdate = mutation({
       throw new ConvexError('La ruta activa no existe.')
     }
 
+    const plausibility = evaluateServerLocationPlausibility({
+      accuracyMeters: accuracyMeters ?? null,
+      nextPosition: { lat, lng },
+      routeSegments: getRouteSegments(route),
+    })
+
+    if (!plausibility.accepted) {
+      if (plausibility.reason === 'low_accuracy') {
+        throw new ConvexError(
+          'La precision del GPS es demasiado baja para compartir esta ubicacion.',
+        )
+      }
+
+      throw new ConvexError(
+        'La ubicacion recibida cae demasiado lejos de la ruta activa.',
+      )
+    }
+
     const recordedAt = new Date().toISOString()
     const locationUpdateId = await db.insert('locationUpdates', {
       activeServiceId: currentService._id,
@@ -305,6 +312,8 @@ export const addLocationUpdate = mutation({
 
     await db.patch(currentService._id, {
       lastLocationUpdateAt: recordedAt,
+      lastPosition: { lat, lng },
+      lastLocationSource: 'device',
     })
 
     return {
@@ -358,21 +367,10 @@ export const changeAssignedRoute = mutation({
     if (currentService) {
       await db.patch(currentService._id, {
         routeId: route._id,
-        lastLocationUpdateAt: changedAt,
-      })
-
-      const nextReferencePosition = getRouteSegments(route)[0]?.[0] ?? {
-        lat: 23.058,
-        lng: -109.701,
-      }
-
-      await db.insert('locationUpdates', {
-        activeServiceId: currentService._id,
-        vehicleId: currentService.vehicleId,
-        routeId: route._id,
-        position: nextReferencePosition,
-        recordedAt: changedAt,
-        source: 'seed',
+        ...getActiveServiceRouteFields(route),
+        lastLocationUpdateAt: undefined,
+        lastPosition: undefined,
+        lastLocationSource: undefined,
       })
     }
 

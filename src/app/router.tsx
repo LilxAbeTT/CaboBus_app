@@ -1,11 +1,5 @@
 import { createBrowserRouter, Navigate } from 'react-router'
 import App from './App'
-import { AdminDashboardPage } from '../pages/AdminDashboardPage'
-import { AdminLoginPage } from '../pages/AdminLoginPage'
-import { DriverPanelPage } from '../pages/DriverPanelPage'
-import { DriverLoginPage } from '../pages/DriverLoginPage'
-import { HomePage } from '../pages/HomePage'
-import { PassengerMapPage } from '../pages/PassengerMapPage'
 
 export const router = createBrowserRouter([
   {
@@ -14,7 +8,10 @@ export const router = createBrowserRouter([
     children: [
       {
         index: true,
-        element: <HomePage />,
+        lazy: async () => {
+          const { HomePage } = await import('../pages/HomePage')
+          return { Component: HomePage }
+        },
       },
       {
         path: 'login',
@@ -22,23 +19,38 @@ export const router = createBrowserRouter([
       },
       {
         path: 'passenger-map',
-        element: <PassengerMapPage />,
+        lazy: async () => {
+          const { PassengerMapPage } = await import('../pages/PassengerMapPage')
+          return { Component: PassengerMapPage }
+        },
       },
       {
         path: 'driver/login',
-        element: <DriverLoginPage />,
+        lazy: async () => {
+          const { DriverLoginPage } = await import('../pages/DriverLoginPage')
+          return { Component: DriverLoginPage }
+        },
       },
       {
         path: 'driver',
-        element: <DriverPanelPage />,
+        lazy: async () => {
+          const { DriverPanelPage } = await import('../pages/DriverPanelPage')
+          return { Component: DriverPanelPage }
+        },
       },
       {
         path: 'admin/login',
-        element: <AdminLoginPage />,
+        lazy: async () => {
+          const { AdminLoginPage } = await import('../pages/AdminLoginPage')
+          return { Component: AdminLoginPage }
+        },
       },
       {
         path: 'admin',
-        element: <AdminDashboardPage />,
+        lazy: async () => {
+          const { AdminDashboardPage } = await import('../pages/AdminDashboardPage')
+          return { Component: AdminDashboardPage }
+        },
       },
       {
         path: '*',
