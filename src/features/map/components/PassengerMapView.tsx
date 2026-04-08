@@ -900,7 +900,7 @@ function PassengerMapContent({
               <img
                 src="/logo.png"
                 alt="VaBus"
-                className="h-12 w-14 object-contain"
+                className="h-12 w-16 object-contain"
               />
             </Link>
 
