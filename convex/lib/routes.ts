@@ -1,7 +1,5 @@
 import type { Doc } from '../_generated/dataModel'
 
-const fallbackSegments = [[{ lat: 23.058, lng: -109.701 }]]
-
 type RouteDocument = Doc<'routes'>
 
 function getLegacyPath(route: RouteDocument) {
@@ -19,7 +17,7 @@ export function getRouteSegments(route: RouteDocument) {
     return [legacyPath]
   }
 
-  return fallbackSegments
+  return []
 }
 
 export function getRouteTransportType(route: RouteDocument) {

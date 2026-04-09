@@ -20,6 +20,37 @@ import {
   getOpenServiceForVehicle,
   getOpenServices,
 } from './lib/services'
+import { recordSystemEvent } from './lib/systemEvents'
+
+function getEffectiveOperationalNowMs(nowMs: number) {
+  const serverNowMs = Date.now()
+
+  if (Math.abs(nowMs - serverNowMs) > 60_000) {
+    return serverNowMs
+  }
+
+  return nowMs
+}
+
+function assertNonEmptyValue(value: string, fieldLabel: string) {
+  if (!value.trim()) {
+    throw new ConvexError(`${fieldLabel} es obligatorio.`)
+  }
+}
+
+async function requireActiveRoute(
+  db: DatabaseWriter,
+  routeId: Id<'routes'>,
+  errorMessage: string,
+) {
+  const route = await db.get(routeId)
+
+  if (!route || route.status !== 'active') {
+    throw new ConvexError(errorMessage)
+  }
+
+  return route
+}
 
 async function ensureUniqueDriverEmail(
   db: DatabaseWriter,
@@ -51,6 +82,45 @@ async function ensureUniqueVehicleUnitNumber(
   }
 }
 
+async function requireAssignableVehicle(
+  db: DatabaseWriter,
+  vehicleId: Id<'vehicles'>,
+  errorMessage: string,
+  excludedDriverId?: Id<'users'>,
+) {
+  const [vehicle, drivers, openService] = await Promise.all([
+    db.get(vehicleId),
+    db
+      .query('users')
+      .withIndex('by_role', (q) => q.eq('role', 'driver'))
+      .collect(),
+    getOpenServiceForVehicle(db, vehicleId),
+  ])
+
+  if (!vehicle || vehicle.status === 'maintenance') {
+    throw new ConvexError(errorMessage)
+  }
+
+  const conflictingDriver = drivers.find(
+    (driver) =>
+      driver._id !== excludedDriverId && driver.defaultVehicleId === vehicleId,
+  )
+
+  if (conflictingDriver) {
+    throw new ConvexError(
+      `La unidad ya esta asignada a ${conflictingDriver.name}.`,
+    )
+  }
+
+  if (openService && openService.driverId !== excludedDriverId) {
+    throw new ConvexError(
+      'La unidad ya tiene un servicio abierto con otro conductor.',
+    )
+  }
+
+  return vehicle
+}
+
 async function requireOpenServiceById(
   db: DatabaseWriter,
   serviceId: Id<'activeServices'>,
@@ -76,11 +146,9 @@ export const getDashboardState = query({
       'admin',
     )
 
+    const effectiveNowMs = getEffectiveOperationalNowMs(nowMs)
     const [routes, drivers, vehicles, openServices] = await Promise.all([
-      db
-        .query('routes')
-        .withIndex('by_status', (q) => q.eq('status', 'active'))
-        .collect(),
+      db.query('routes').collect(),
       db
         .query('users')
         .withIndex('by_role', (q) => q.eq('role', 'driver'))
@@ -88,6 +156,12 @@ export const getDashboardState = query({
       db.query('vehicles').order('asc').collect(),
       getOpenServices(db),
     ])
+    const activeRoutes = routes.filter((route) => route.status === 'active')
+    const recentEvents = await db
+      .query('systemEvents')
+      .withIndex('by_created_at')
+      .order('desc')
+      .take(16)
     const routeById = new Map(routes.map((route) => [route._id, route]))
     const driverById = new Map(drivers.map((driver) => [driver._id, driver]))
     const vehicleById = new Map(vehicles.map((vehicle) => [vehicle._id, vehicle]))
@@ -98,16 +172,13 @@ export const getDashboardState = query({
         const driver = driverById.get(service.driverId)
         const vehicle = vehicleById.get(service.vehicleId)
 
-        if (!route) {
-          return null
-        }
-
         return {
           id: service._id,
           routeId: service.routeId,
-          routeName: service.routeName ?? route.name,
-          routeDirection: service.routeDirection ?? route.direction,
-          transportType: service.routeTransportType ?? route.transportType ?? 'urbano',
+          routeName: service.routeName ?? route?.name ?? 'Ruta sin catalogo activo',
+          routeDirection: service.routeDirection ?? route?.direction ?? 'Sin direccion',
+          transportType:
+            service.routeTransportType ?? route?.transportType ?? 'urbano',
           vehicleId: service.vehicleId,
           unitNumber: service.vehicleUnitNumber ?? vehicle?.unitNumber ?? 'Unidad',
           vehicleLabel: service.vehicleLabel ?? vehicle?.label ?? 'Unidad activa',
@@ -120,35 +191,65 @@ export const getDashboardState = query({
           lastPosition: service.lastPosition,
           operationalStatus: getOperationalStatusForService({
             activeService: service,
-            nowMs,
+            nowMs: effectiveNowMs,
           }),
         }
       })
     ).filter((service) => service !== null)
 
-    const routeSummaries = routes
-      .map((route) => {
-        const routeServices = services.filter((service) => service.routeId === route._id)
-
-        return {
+    const routeSummaryMap = new Map<
+      Id<'routes'>,
+      {
+        routeId: Id<'routes'>
+        routeName: string
+        routeDirection: string
+        transportType: 'urbano' | 'colectivo'
+        totalServices: number
+        activeRecent: number
+        activeStale: number
+        probablyStopped: number
+        pausedServices: number
+      }
+    >(
+      activeRoutes.map((route) => [
+        route._id,
+        {
           routeId: route._id,
           routeName: route.name,
           routeDirection: route.direction,
           transportType: route.transportType ?? 'urbano',
-          totalServices: routeServices.length,
-          activeRecent: routeServices.filter(
-            (service) => service.operationalStatus === 'active_recent',
-          ).length,
-          activeStale: routeServices.filter(
-            (service) => service.operationalStatus === 'active_stale',
-          ).length,
-          probablyStopped: routeServices.filter(
-            (service) => service.operationalStatus === 'probably_stopped',
-          ).length,
-          pausedServices: routeServices.filter((service) => service.status === 'paused')
-            .length,
-        }
-      })
+          totalServices: 0,
+          activeRecent: 0,
+          activeStale: 0,
+          probablyStopped: 0,
+          pausedServices: 0,
+        },
+      ]),
+    )
+
+    services.forEach((service) => {
+      const currentSummary = routeSummaryMap.get(service.routeId)
+
+      if (!currentSummary) {
+        return
+      }
+
+      currentSummary.totalServices += 1
+
+      if (service.status === 'paused') {
+        currentSummary.pausedServices += 1
+      }
+
+      if (service.operationalStatus === 'active_recent') {
+        currentSummary.activeRecent += 1
+      } else if (service.operationalStatus === 'active_stale') {
+        currentSummary.activeStale += 1
+      } else {
+        currentSummary.probablyStopped += 1
+      }
+    })
+
+    const routeSummaries = [...routeSummaryMap.values()]
       .filter((route) => route.totalServices > 0)
       .sort((left, right) => left.routeName.localeCompare(right.routeName, 'es'))
 
@@ -173,7 +274,7 @@ export const getDashboardState = query({
       },
       overview: {
         totals: {
-          activeRoutes: routes.length,
+          activeRoutes: activeRoutes.length,
           openServices: services.length,
           activeServices: services.filter((service) => service.status === 'active')
             .length,
@@ -194,8 +295,21 @@ export const getDashboardState = query({
           right.startedAt.localeCompare(left.startedAt),
         ),
       },
-      routes: routes
+      routes: activeRoutes
         .map((route) => toRouteSummary(route))
+        .sort((left, right) => left.name.localeCompare(right.name, 'es')),
+      routeCatalog: routes
+        .map((route) => ({
+          ...toRouteSummary(route),
+          activeServiceCount: services.filter((service) => service.routeId === route._id)
+            .length,
+          assignedDriverCount: drivers.filter(
+            (driver) => driver.defaultRouteId === route._id,
+          ).length,
+          assignedVehicleCount: vehicles.filter(
+            (vehicle) => vehicle.defaultRouteId === route._id,
+          ).length,
+        }))
         .sort((left, right) => left.name.localeCompare(right.name, 'es')),
       drivers: drivers
         .sort((left, right) => left.name.localeCompare(right.name, 'es'))
@@ -236,6 +350,9 @@ export const getDashboardState = query({
             defaultRouteName: vehicle.defaultRouteId
               ? routeNameById.get(vehicle.defaultRouteId)
               : undefined,
+            assignedDriverNames: drivers
+              .filter((driver) => driver.defaultVehicleId === vehicle._id)
+              .map((driver) => driver.name),
             hasOpenService: openService !== undefined,
             currentRouteName: openService
               ? routeNameById.get(openService.routeId)
@@ -243,6 +360,60 @@ export const getDashboardState = query({
             currentServiceStatus: openService?.status,
           }
         }),
+      alerts: [
+        ...drivers
+          .filter((driver) => !driver.defaultVehicleId)
+          .map((driver) => ({
+            id: `driver-without-vehicle:${driver._id}`,
+            severity: 'warning' as const,
+            title: 'Conductor sin unidad base',
+            description: `${driver.name} no tiene unidad asignada.`,
+          })),
+        ...drivers
+          .filter((driver) => !driver.defaultRouteId)
+          .map((driver) => ({
+            id: `driver-without-route:${driver._id}`,
+            severity: 'warning' as const,
+            title: 'Conductor sin ruta base',
+            description: `${driver.name} no tiene ruta base configurada.`,
+          })),
+        ...routes
+          .filter(
+            (route) =>
+              route.status === 'draft' &&
+              (drivers.some((driver) => driver.defaultRouteId === route._id) ||
+                vehicles.some((vehicle) => vehicle.defaultRouteId === route._id)),
+          )
+          .map((route) => ({
+            id: `draft-route-assigned:${route._id}`,
+            severity: 'warning' as const,
+            title: 'Ruta draft con asignaciones',
+            description: `${route.name} sigue asignada como ruta base aunque no esta activa.`,
+          })),
+        ...vehicles
+          .filter(
+            (vehicle) =>
+              drivers.filter((driver) => driver.defaultVehicleId === vehicle._id).length >
+              1,
+          )
+          .map((vehicle) => ({
+            id: `vehicle-duplicated:${vehicle._id}`,
+            severity: 'critical' as const,
+            title: 'Unidad asignada a multiples conductores',
+            description: `${vehicle.unitNumber} esta asignada a multiples conductores base.`,
+          })),
+      ],
+      events: recentEvents.map((event) => ({
+        id: event._id,
+        category: event.category,
+        title: event.title,
+        description: event.description,
+        actorName: event.actorName,
+        actorRole: event.actorRole,
+        targetType: event.targetType,
+        targetId: event.targetId,
+        createdAt: event.createdAt,
+      })),
     }
   },
 })
@@ -271,24 +442,22 @@ export const createDriver = mutation({
   ) => {
     await requireAuthenticatedSession(db, sessionToken, 'admin')
 
+    assertNonEmptyValue(name, 'El nombre')
+    assertNonEmptyValue(email, 'El correo')
     const normalizedEmail = normalizeEmail(email)
     await ensureUniqueDriverEmail(db, normalizedEmail)
     const passwordHash = await hashPassword(password)
 
     if (defaultRouteId) {
-      const route = await db.get(defaultRouteId)
-
-      if (!route) {
-        throw new ConvexError('La ruta asignada ya no existe.')
-      }
+      await requireActiveRoute(db, defaultRouteId, 'La ruta asignada no esta activa.')
     }
 
     if (defaultVehicleId) {
-      const vehicle = await db.get(defaultVehicleId)
-
-      if (!vehicle) {
-        throw new ConvexError('La unidad asignada ya no existe.')
-      }
+      await requireAssignableVehicle(
+        db,
+        defaultVehicleId,
+        'La unidad asignada no esta disponible.',
+      )
     }
 
     const driverId = await db.insert('users', {
@@ -300,6 +469,16 @@ export const createDriver = mutation({
       role: 'driver',
       status: status ?? 'active',
       createdAt: new Date().toISOString(),
+    })
+
+    await recordSystemEvent(db, {
+      category: 'driver',
+      title: 'Conductor creado',
+      description: `${name.trim()} fue dado de alta en el panel admin.`,
+      actorName: 'Administracion',
+      actorRole: 'admin',
+      targetType: 'driver',
+      targetId: driverId,
     })
 
     return {
@@ -348,23 +527,32 @@ export const updateDriver = mutation({
       )
     }
 
+    assertNonEmptyValue(name, 'El nombre')
+    assertNonEmptyValue(email, 'El correo')
     const normalizedEmail = normalizeEmail(email)
     await ensureUniqueDriverEmail(db, normalizedEmail, driverId)
 
-    if (defaultRouteId) {
-      const route = await db.get(defaultRouteId)
+    if (
+      openService &&
+      ((defaultRouteId ?? null) !== (driver.defaultRouteId ?? null) ||
+        (defaultVehicleId ?? null) !== (driver.defaultVehicleId ?? null))
+    ) {
+      throw new ConvexError(
+        'No cambies la ruta o unidad base mientras el conductor tenga un servicio abierto.',
+      )
+    }
 
-      if (!route) {
-        throw new ConvexError('La ruta asignada ya no existe.')
-      }
+    if (defaultRouteId) {
+      await requireActiveRoute(db, defaultRouteId, 'La ruta asignada no esta activa.')
     }
 
     if (defaultVehicleId) {
-      const vehicle = await db.get(defaultVehicleId)
-
-      if (!vehicle) {
-        throw new ConvexError('La unidad asignada ya no existe.')
-      }
+      await requireAssignableVehicle(
+        db,
+        defaultVehicleId,
+        'La unidad asignada no esta disponible.',
+        driverId,
+      )
     }
 
     const patch: Partial<typeof driver> = {
@@ -384,6 +572,16 @@ export const updateDriver = mutation({
     if (openService) {
       await db.patch(openService._id, getActiveServiceDriverFields({ name: name.trim() }))
     }
+
+    await recordSystemEvent(db, {
+      category: 'driver',
+      title: 'Conductor actualizado',
+      description: `${name.trim()} fue actualizado desde el panel admin.`,
+      actorName: 'Administracion',
+      actorRole: 'admin',
+      targetType: 'driver',
+      targetId: driverId,
+    })
 
     return {
       driverId,
@@ -406,14 +604,12 @@ export const createVehicle = mutation({
     await requireAuthenticatedSession(db, sessionToken, 'admin')
 
     const normalizedUnitNumber = unitNumber.trim()
+    assertNonEmptyValue(normalizedUnitNumber, 'El numero de unidad')
+    assertNonEmptyValue(label, 'La etiqueta de la unidad')
     await ensureUniqueVehicleUnitNumber(db, normalizedUnitNumber)
 
     if (defaultRouteId) {
-      const route = await db.get(defaultRouteId)
-
-      if (!route) {
-        throw new ConvexError('La ruta por defecto ya no existe.')
-      }
+      await requireActiveRoute(db, defaultRouteId, 'La ruta por defecto no esta activa.')
     }
 
     const vehicleId = await db.insert('vehicles', {
@@ -422,6 +618,16 @@ export const createVehicle = mutation({
       status,
       defaultRouteId,
       createdAt: new Date().toISOString(),
+    })
+
+    await recordSystemEvent(db, {
+      category: 'vehicle',
+      title: 'Unidad creada',
+      description: `${normalizedUnitNumber} fue registrada en el panel admin.`,
+      actorName: 'Administracion',
+      actorRole: 'admin',
+      targetType: 'vehicle',
+      targetId: vehicleId,
     })
 
     return {
@@ -436,7 +642,11 @@ export const updateVehicle = mutation({
     vehicleId: v.id('vehicles'),
     unitNumber: v.string(),
     label: v.string(),
-    status: v.union(v.literal('available'), v.literal('maintenance')),
+    status: v.union(
+      v.literal('available'),
+      v.literal('maintenance'),
+      v.literal('in_service'),
+    ),
     defaultRouteId: v.optional(v.id('routes')),
   },
   handler: async (
@@ -460,20 +670,26 @@ export const updateVehicle = mutation({
     }
 
     const normalizedUnitNumber = unitNumber.trim()
+    assertNonEmptyValue(normalizedUnitNumber, 'El numero de unidad')
+    assertNonEmptyValue(label, 'La etiqueta de la unidad')
     await ensureUniqueVehicleUnitNumber(db, normalizedUnitNumber, vehicleId)
 
     if (defaultRouteId) {
-      const route = await db.get(defaultRouteId)
-
-      if (!route) {
-        throw new ConvexError('La ruta por defecto ya no existe.')
-      }
+      await requireActiveRoute(db, defaultRouteId, 'La ruta por defecto no esta activa.')
     }
+
+    if (!openService && status === 'in_service') {
+      throw new ConvexError(
+        'Solo una unidad con servicio abierto puede mantenerse en servicio.',
+      )
+    }
+
+    const effectiveStatus = openService ? 'in_service' : status
 
     await db.patch(vehicleId, {
       unitNumber: normalizedUnitNumber,
       label: label.trim(),
-      status,
+      status: effectiveStatus,
       defaultRouteId,
     })
 
@@ -484,11 +700,21 @@ export const updateVehicle = mutation({
           ...vehicle,
           unitNumber: normalizedUnitNumber,
           label: label.trim(),
-          status,
+          status: effectiveStatus,
           defaultRouteId,
         }),
       )
     }
+
+    await recordSystemEvent(db, {
+      category: 'vehicle',
+      title: 'Unidad actualizada',
+      description: `${normalizedUnitNumber} fue actualizada desde el panel admin.`,
+      actorName: 'Administracion',
+      actorRole: 'admin',
+      targetType: 'vehicle',
+      targetId: vehicleId,
+    })
 
     return {
       vehicleId,
@@ -513,6 +739,16 @@ export const pauseService = mutation({
       status: 'paused',
     })
 
+    await recordSystemEvent(db, {
+      category: 'service',
+      title: 'Servicio pausado',
+      description: `${service.vehicleUnitNumber ?? 'Unidad'} en ${service.routeName ?? 'ruta activa'} fue pausado por administracion.`,
+      actorName: 'Administracion',
+      actorRole: 'admin',
+      targetType: 'service',
+      targetId: serviceId,
+    })
+
     return {
       serviceId,
       status: 'paused',
@@ -535,6 +771,16 @@ export const resumeService = mutation({
 
     await db.patch(serviceId, {
       status: 'active',
+    })
+
+    await recordSystemEvent(db, {
+      category: 'service',
+      title: 'Servicio reanudado',
+      description: `${service.vehicleUnitNumber ?? 'Unidad'} en ${service.routeName ?? 'ruta activa'} fue reanudado por administracion.`,
+      actorName: 'Administracion',
+      actorRole: 'admin',
+      targetType: 'service',
+      targetId: serviceId,
     })
 
     return {
@@ -564,9 +810,170 @@ export const finishService = mutation({
       status: 'available',
     })
 
+    await recordSystemEvent(db, {
+      category: 'service',
+      title: 'Servicio finalizado',
+      description: `${service.vehicleUnitNumber ?? 'Unidad'} en ${service.routeName ?? 'ruta activa'} fue finalizado por administracion.`,
+      actorName: 'Administracion',
+      actorRole: 'admin',
+      targetType: 'service',
+      targetId: serviceId,
+    })
+
     return {
       serviceId,
       endedAt,
+    }
+  },
+})
+
+export const setDriverStatus = mutation({
+  args: {
+    sessionToken: v.string(),
+    driverId: v.id('users'),
+    status: v.union(v.literal('active'), v.literal('inactive')),
+  },
+  handler: async ({ db }, { sessionToken, driverId, status }) => {
+    await requireAuthenticatedSession(db, sessionToken, 'admin')
+    const driver = await db.get(driverId)
+
+    if (!driver || driver.role !== 'driver') {
+      throw new ConvexError('El conductor indicado no existe.')
+    }
+
+    const openService = await getOpenServiceForDriver(db, driverId)
+
+    if (status === 'inactive' && openService) {
+      throw new ConvexError(
+        'No puedes inactivar un conductor con un servicio abierto.',
+      )
+    }
+
+    await db.patch(driverId, { status })
+
+    await recordSystemEvent(db, {
+      category: 'driver',
+      title: status === 'active' ? 'Conductor activado' : 'Conductor inactivado',
+      description: `${driver.name} fue marcado como ${status === 'active' ? 'activo' : 'inactivo'} desde el panel admin.`,
+      actorName: 'Administracion',
+      actorRole: 'admin',
+      targetType: 'driver',
+      targetId: driverId,
+    })
+
+    return {
+      driverId,
+      status,
+    }
+  },
+})
+
+export const setVehicleStatus = mutation({
+  args: {
+    sessionToken: v.string(),
+    vehicleId: v.id('vehicles'),
+    status: v.union(v.literal('available'), v.literal('maintenance')),
+  },
+  handler: async ({ db }, { sessionToken, vehicleId, status }) => {
+    await requireAuthenticatedSession(db, sessionToken, 'admin')
+    const vehicle = await db.get(vehicleId)
+
+    if (!vehicle) {
+      throw new ConvexError('La unidad indicada no existe.')
+    }
+
+    const openService = await getOpenServiceForVehicle(db, vehicleId)
+
+    if (openService) {
+      throw new ConvexError(
+        'No puedes cambiar la disponibilidad de una unidad con servicio abierto.',
+      )
+    }
+
+    await db.patch(vehicleId, { status })
+
+    await recordSystemEvent(db, {
+      category: 'vehicle',
+      title:
+        status === 'available'
+          ? 'Unidad disponible'
+          : 'Unidad en mantenimiento',
+      description: `${vehicle.unitNumber} fue marcada como ${status === 'available' ? 'disponible' : 'mantenimiento'} desde el panel admin.`,
+      actorName: 'Administracion',
+      actorRole: 'admin',
+      targetType: 'vehicle',
+      targetId: vehicleId,
+    })
+
+    return {
+      vehicleId,
+      status,
+    }
+  },
+})
+
+export const setRouteStatus = mutation({
+  args: {
+    sessionToken: v.string(),
+    routeId: v.id('routes'),
+    status: v.union(v.literal('active'), v.literal('draft')),
+  },
+  handler: async ({ db }, { sessionToken, routeId, status }) => {
+    await requireAuthenticatedSession(db, sessionToken, 'admin')
+    const route = await db.get(routeId)
+
+    if (!route) {
+      throw new ConvexError('La ruta indicada no existe.')
+    }
+
+    if (route.status === status) {
+      return {
+        routeId,
+        status,
+      }
+    }
+
+    if (status === 'draft') {
+      const [openServices, drivers, vehicles] = await Promise.all([
+        getOpenServices(db),
+        db
+          .query('users')
+          .withIndex('by_role', (q) => q.eq('role', 'driver'))
+          .collect(),
+        db.query('vehicles').collect(),
+      ])
+
+      if (openServices.some((service) => service.routeId === routeId)) {
+        throw new ConvexError(
+          'No puedes desactivar una ruta con servicios abiertos.',
+        )
+      }
+
+      if (
+        drivers.some((driver) => driver.defaultRouteId === routeId) ||
+        vehicles.some((vehicle) => vehicle.defaultRouteId === routeId)
+      ) {
+        throw new ConvexError(
+          'No puedes desactivar una ruta que sigue asignada como base.',
+        )
+      }
+    }
+
+    await db.patch(routeId, { status })
+
+    await recordSystemEvent(db, {
+      category: 'route',
+      title: status === 'active' ? 'Ruta activada' : 'Ruta desactivada',
+      description: `${route.name} fue marcada como ${status === 'active' ? 'activa' : 'draft'} desde el panel admin.`,
+      actorName: 'Administracion',
+      actorRole: 'admin',
+      targetType: 'route',
+      targetId: routeId,
+    })
+
+    return {
+      routeId,
+      status,
     }
   },
 })

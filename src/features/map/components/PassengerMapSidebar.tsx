@@ -30,26 +30,6 @@ function SparkIcon() {
   )
 }
 
-function RouteIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 24 24"
-      className="h-4 w-4"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M5 18c1.7-4.7 4.6-7 8.8-7H19" />
-      <path d="M15 7h4v4" />
-      <circle cx="6" cy="18" r="1.75" />
-      <circle cx="19" cy="11" r="1.75" />
-    </svg>
-  )
-}
-
 function DistanceIcon() {
   return (
     <svg
@@ -157,9 +137,13 @@ export function PassengerMapSidebar({
   selectedRoute,
   routeDistanceById,
   vehicleStatsByRoute,
+  routeSearchTerm,
+  showOnlyRoutesWithVisibleVehicles,
   canResetView,
   onRequestPermission,
   onFocusRecommended,
+  onRouteSearchTermChange,
+  onToggleShowOnlyRoutesWithVisibleVehicles,
   onTransportTypeChange,
   onResetView,
   onToggleRoute,
@@ -175,9 +159,13 @@ export function PassengerMapSidebar({
   selectedRoute: BusRoute | null
   routeDistanceById: Map<string, number | null>
   vehicleStatsByRoute: Map<string, { visible: number; stopped: number }>
+  routeSearchTerm: string
+  showOnlyRoutesWithVisibleVehicles: boolean
   canResetView: boolean
   onRequestPermission: () => void
   onFocusRecommended: () => void
+  onRouteSearchTermChange: (value: string) => void
+  onToggleShowOnlyRoutesWithVisibleVehicles: () => void
   onTransportTypeChange: (transportType: TransportType) => void
   onResetView: () => void
   onToggleRoute: (routeId: string) => void
@@ -231,19 +219,7 @@ export function PassengerMapSidebar({
               </div>
             </div>
 
-            <div className="flex items-center gap-3 rounded-[1.1rem] bg-white/80 px-3 py-2.5 shadow-sm">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-50 text-amber-700">
-                <RouteIcon />
-              </div>
-              <div className="min-w-0">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
-                  Accion
-                </p>
-                <p className="truncate text-sm text-slate-700">
-                  Toca el boton para enfocarla en el mapa.
-                </p>
-              </div>
-            </div>
+        
           </div>
         ) : (
           <div className="mt-4 rounded-[1.1rem] bg-white/80 px-3 py-3 shadow-sm">
@@ -306,6 +282,33 @@ export function PassengerMapSidebar({
           className="text-sm font-semibold text-slate-500 transition hover:text-slate-900 disabled:cursor-not-allowed disabled:text-slate-300"
         >
           General
+        </button>
+      </div>
+
+      <div className="mt-3 space-y-2">
+        <label className="block">
+          <span className="sr-only">Buscar ruta</span>
+          <input
+            type="text"
+            value={routeSearchTerm}
+            onChange={(event) => onRouteSearchTermChange(event.target.value)}
+            placeholder="Buscar ruta o trayecto"
+            className="w-full rounded-[1rem] border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-teal-400"
+          />
+        </label>
+
+        <button
+          type="button"
+          onClick={onToggleShowOnlyRoutesWithVisibleVehicles}
+          className={`inline-flex min-h-10 items-center justify-center rounded-full px-4 text-sm font-semibold transition ${
+            showOnlyRoutesWithVisibleVehicles
+              ? 'bg-slate-900 text-white'
+              : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+          }`}
+        >
+          {showOnlyRoutesWithVisibleVehicles
+            ? 'Mostrando solo rutas con unidades activas'
+            : 'Mostrar solo rutas con unidades activas'}
         </button>
       </div>
 
@@ -404,6 +407,12 @@ export function PassengerMapSidebar({
             </article>
           )
         })}
+
+        {activeRouteGroup && activeRouteGroup.routes.length === 0 ? (
+          <div className="w-full rounded-[1.25rem] border border-dashed border-slate-200 bg-white/80 px-4 py-5 text-sm text-slate-500">
+            No hay rutas que coincidan con tus filtros actuales.
+          </div>
+        ) : null}
       </div>
     </section>
   )

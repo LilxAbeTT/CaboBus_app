@@ -184,7 +184,11 @@ export function PassengerRoutePickerModal({
   activeTransportType,
   routeGroups,
   selectedRouteId,
+  routeSearchTerm,
+  showOnlyRoutesWithVisibleVehicles,
   onClose,
+  onRouteSearchTermChange,
+  onToggleShowOnlyRoutesWithVisibleVehicles,
   onTransportTypeChange,
   onRouteSelect,
   onClearSelection,
@@ -193,7 +197,11 @@ export function PassengerRoutePickerModal({
   activeTransportType: TransportType
   routeGroups: PassengerRouteGroup[]
   selectedRouteId: string | null
+  routeSearchTerm: string
+  showOnlyRoutesWithVisibleVehicles: boolean
   onClose: () => void
+  onRouteSearchTermChange: (value: string) => void
+  onToggleShowOnlyRoutesWithVisibleVehicles: () => void
   onTransportTypeChange: (transportType: TransportType) => void
   onRouteSelect: (routeId: string) => void
   onClearSelection: () => void
@@ -254,6 +262,33 @@ export function PassengerRoutePickerModal({
             ))}
           </div>
 
+          <div className="mt-4 space-y-2">
+            <label className="block">
+              <span className="sr-only">Buscar ruta</span>
+              <input
+                type="text"
+                value={routeSearchTerm}
+                onChange={(event) => onRouteSearchTermChange(event.target.value)}
+                placeholder="Buscar ruta o trayecto"
+                className="w-full rounded-[1rem] border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-teal-400"
+              />
+            </label>
+
+            <button
+              type="button"
+              onClick={onToggleShowOnlyRoutesWithVisibleVehicles}
+              className={`inline-flex min-h-10 items-center justify-center rounded-full px-4 text-sm font-semibold transition ${
+                showOnlyRoutesWithVisibleVehicles
+                  ? 'bg-slate-900 text-white'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+              }`}
+            >
+              {showOnlyRoutesWithVisibleVehicles
+                ? 'Mostrando solo rutas con unidades activas'
+                : 'Mostrar solo rutas con unidades activas'}
+            </button>
+          </div>
+
           <div className="mt-4 flex snap-x snap-mandatory gap-3 overflow-x-auto pb-1">
             {activeGroup?.routes.map((route) => {
               const isSelected = route.id === selectedRouteId
@@ -279,6 +314,12 @@ export function PassengerRoutePickerModal({
                 </button>
               )
             })}
+
+            {activeGroup && activeGroup.routes.length === 0 ? (
+              <div className="w-full rounded-[1.25rem] border border-dashed border-slate-200 bg-white px-4 py-5 text-sm text-slate-500">
+                No hay rutas disponibles con los filtros actuales.
+              </div>
+            ) : null}
           </div>
 
           <div className="mt-4 flex items-center justify-between gap-3">

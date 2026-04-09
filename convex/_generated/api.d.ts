@@ -18,6 +18,7 @@ import type * as lib_location from "../lib/location.js";
 import type * as lib_routes from "../lib/routes.js";
 import type * as lib_serviceOperationalState from "../lib/serviceOperationalState.js";
 import type * as lib_services from "../lib/services.js";
+import type * as lib_systemEvents from "../lib/systemEvents.js";
 import type * as passengerMap from "../passengerMap.js";
 import type * as routes from "../routes.js";
 import type * as seed from "../seed.js";
@@ -40,6 +41,7 @@ declare const fullApi: ApiFromModules<{
   "lib/routes": typeof lib_routes;
   "lib/serviceOperationalState": typeof lib_serviceOperationalState;
   "lib/services": typeof lib_services;
+  "lib/systemEvents": typeof lib_systemEvents;
   passengerMap: typeof passengerMap;
   routes: typeof routes;
   seed: typeof seed;

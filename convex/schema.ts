@@ -96,4 +96,27 @@ export default defineSchema({
   })
     .index('by_token', ['token'])
     .index('by_user', ['userId']),
+
+  systemEvents: defineTable({
+    category: v.union(
+      v.literal('service'),
+      v.literal('driver'),
+      v.literal('vehicle'),
+      v.literal('route'),
+    ),
+    title: v.string(),
+    description: v.string(),
+    actorName: v.optional(v.string()),
+    actorRole: v.optional(v.union(v.literal('driver'), v.literal('admin'))),
+    targetType: v.optional(
+      v.union(
+        v.literal('service'),
+        v.literal('driver'),
+        v.literal('vehicle'),
+        v.literal('route'),
+      ),
+    ),
+    targetId: v.optional(v.string()),
+    createdAt: v.string(),
+  }).index('by_created_at', ['createdAt']),
 })

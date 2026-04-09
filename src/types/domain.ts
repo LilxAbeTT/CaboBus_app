@@ -181,15 +181,44 @@ export interface AdminManagedVehicle {
   status: VehicleStatus
   defaultRouteId?: string
   defaultRouteName?: string
+  assignedDriverNames: string[]
   hasOpenService: boolean
   currentRouteName?: string
   currentServiceStatus?: ActiveServiceStatus
+}
+
+export interface AdminRouteCatalogItem extends BusRoute {
+  activeServiceCount: number
+  assignedDriverCount: number
+  assignedVehicleCount: number
+}
+
+export interface AdminOperationalAlert {
+  id: string
+  severity: 'warning' | 'critical'
+  title: string
+  description: string
 }
 
 export interface AdminDashboardState {
   admin: AppUser
   overview: AdminOperationalOverview
   routes: BusRoute[]
+  routeCatalog: AdminRouteCatalogItem[]
   drivers: AdminManagedDriver[]
   vehicles: AdminManagedVehicle[]
+  alerts: AdminOperationalAlert[]
+  events: AdminSystemEvent[]
+}
+
+export interface AdminSystemEvent {
+  id: string
+  category: 'service' | 'driver' | 'vehicle' | 'route'
+  title: string
+  description: string
+  actorName?: string
+  actorRole?: 'driver' | 'admin'
+  targetType?: 'service' | 'driver' | 'vehicle' | 'route'
+  targetId?: string
+  createdAt: string
 }

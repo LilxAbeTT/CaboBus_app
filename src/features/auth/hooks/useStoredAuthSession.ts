@@ -27,6 +27,8 @@ function readStoredSession(storageKey: string) {
     window.localStorage.removeItem(storageKey)
   }
 
+  window.localStorage.removeItem(storageKey)
+
   return null
 }
 

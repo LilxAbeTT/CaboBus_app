@@ -39,6 +39,7 @@ export interface BrowserLocationSubmissionResult {
   accepted: boolean
   recordedAt?: string
   rejectionMessage?: string
+  shouldContinue?: boolean
 }
 
 export type BrowserGeolocationPermissionState =
@@ -89,7 +90,7 @@ function getPermissionRequestErrorMessage(error: GeolocationPositionError) {
     case error.PERMISSION_DENIED:
       return 'El permiso de ubicacion fue denegado por el navegador.'
     case error.TIMEOUT:
-      return 'No se pudo confirmar el permiso con una lectura rapida. Reintenta cuando mantengas la pestaña visible o usa el modo manual.'
+      return 'No se pudo confirmar el permiso con una lectura rapida. Reintenta cuando mantengas la pestana visible o usa el modo manual.'
     case error.POSITION_UNAVAILABLE:
       return 'El navegador no pudo confirmar la ubicacion al pedir permiso. Reintenta o usa el modo manual.'
     default:
@@ -235,7 +236,7 @@ export function useBrowserLocationTracking() {
       }
 
       if (!result.accepted) {
-        if (result.rejectionMessage) {
+        if (!result.shouldContinue && result.rejectionMessage) {
           setTrackingError(result.rejectionMessage)
         }
 
@@ -482,13 +483,19 @@ export function useBrowserLocationTracking() {
           return
         }
 
-        if (!initialDelivery.accepted) {
+      if (!initialDelivery.accepted && !initialDelivery.shouldContinue) {
           failTracking(
             'signal_timeout',
             initialDelivery.rejectionMessage ??
               'No fue posible validar una primera ubicacion confiable. Reintenta el tracking o usa el modo manual.',
           )
           return
+        }
+
+        if (initialDelivery.shouldContinue) {
+          hasAcceptedSignalRef.current = true
+          setTrackingError(null)
+          setTrackingStatus('first_signal_received')
         }
 
         watchIdRef.current = navigator.geolocation.watchPosition(
@@ -539,13 +546,7 @@ export function useBrowserLocationTracking() {
         failTracking('signal_timeout', getInitialAcquisitionErrorMessage(error))
       }
     })()
-  }, [
-    acquireInitialPosition,
-    clearWatch,
-    deliverPosition,
-    failTracking,
-    trackingStatus,
-  ])
+  }, [acquireInitialPosition, clearWatch, deliverPosition, failTracking, trackingStatus])
 
   return {
     permissionState,

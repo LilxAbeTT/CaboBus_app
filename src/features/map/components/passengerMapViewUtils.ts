@@ -1,13 +1,11 @@
 import type {
   BusRoute,
+  Coordinates,
   PassengerMapVehicle,
   TransportType,
 } from '../../../types/domain'
 import type { PassengerGeolocationPermissionState } from '../hooks/usePassengerGeolocation'
-import {
-  getServiceOperationalStatus,
-  type ServiceOperationalStatus,
-} from '../../../../shared/tracking'
+import type { ServiceOperationalStatus } from '../../../../shared/tracking'
 
 export interface PassengerRouteGroup {
   transportType: TransportType
@@ -37,6 +35,26 @@ export function formatLastUpdate(value: string) {
     day: '2-digit',
     month: 'short',
   }).format(new Date(value))
+}
+
+export function formatRelativeLastUpdate(value: string, nowMs: number) {
+  const elapsedMs = nowMs - new Date(value).getTime()
+
+  if (!Number.isFinite(elapsedMs) || elapsedMs <= 0) {
+    return 'hace un momento'
+  }
+
+  const elapsedMinutes = Math.round(elapsedMs / 60_000)
+
+  if (elapsedMinutes < 1) return 'hace un momento'
+  if (elapsedMinutes < 60) return `hace ${elapsedMinutes} min`
+
+  const elapsedHours = Math.round(elapsedMinutes / 60)
+
+  if (elapsedHours < 24) return `hace ${elapsedHours} h`
+
+  const elapsedDays = Math.round(elapsedHours / 24)
+  return `hace ${elapsedDays} d`
 }
 
 export function getTransportTypeLabel(transportType: TransportType) {
@@ -154,6 +172,19 @@ export function getRouteDistanceTone(distanceMeters: number | null) {
   return 'bg-slate-100 text-slate-600'
 }
 
+export function routeMatchesSearch(route: BusRoute, searchTerm: string) {
+  const normalizedSearch = searchTerm.trim().toLowerCase()
+
+  if (!normalizedSearch) {
+    return true
+  }
+
+  return (
+    route.name.toLowerCase().includes(normalizedSearch) ||
+    route.direction.toLowerCase().includes(normalizedSearch)
+  )
+}
+
 export function getLocationStatusCopy({
   permissionState,
   isRequestingPermission,
@@ -209,19 +240,15 @@ export function getLocationStatusCopy({
 export function decorateVehiclesWithRouteMeta(
   vehicles: PassengerMapVehicle[],
   routes: BusRoute[],
-  nowMs: number,
 ): PassengerMapVehicleView[] {
   const routeTransportTypeById = new Map(
     routes.map((route) => [route.id, route.transportType] as const),
   )
 
   return vehicles.map((vehicle) => {
-    const operationalStatus = getServiceOperationalStatus(vehicle.lastUpdate, nowMs)
-
     return {
       ...vehicle,
-      operationalStatus,
-      isVisibleInOverview: operationalStatus !== 'probably_stopped',
+      isVisibleInOverview: vehicle.operationalStatus !== 'probably_stopped',
       transportType: routeTransportTypeById.get(vehicle.routeId) ?? 'urbano',
     }
   })
@@ -230,10 +257,14 @@ export function decorateVehiclesWithRouteMeta(
 export function getDisplayedVehicles(
   vehicles: PassengerMapVehicleView[],
   activeTransportType: TransportType,
+  selectedRouteId?: string | null,
 ) {
   return vehicles.filter(
     (vehicle) =>
-      vehicle.transportType === activeTransportType && vehicle.isVisibleInOverview,
+      vehicle.transportType === activeTransportType &&
+      (selectedRouteId
+        ? vehicle.routeId === selectedRouteId
+        : vehicle.isVisibleInOverview),
   )
 }
 
@@ -273,6 +304,86 @@ export function getSortedRoutesByDistance(
     }))
     .filter((entry) => entry.distanceMeters !== null)
     .sort((left, right) => (left.distanceMeters ?? 0) - (right.distanceMeters ?? 0))
+}
+
+export function getRecommendedRouteEntry(
+  routeEntries: PassengerRouteDistanceEntry[],
+  vehicleStatsByRoute: Map<string, { visible: number; stopped: number }>,
+) {
+  if (routeEntries.length === 0) {
+    return null
+  }
+
+  const routesWithVisibleVehicles = routeEntries.filter(
+    (entry) => (vehicleStatsByRoute.get(entry.route.id)?.visible ?? 0) > 0,
+  )
+
+  return routesWithVisibleVehicles[0] ?? routeEntries[0] ?? null
+}
+
+export function getNearbyRoutesCount(
+  routes: BusRoute[],
+  routeDistanceById: Map<string, number | null>,
+  maxDistanceMeters = 2_000,
+) {
+  return routes.filter((route) => {
+    const distanceMeters = routeDistanceById.get(route.id)
+    return (
+      distanceMeters !== null &&
+      distanceMeters !== undefined &&
+      distanceMeters <= maxDistanceMeters
+    )
+  }).length
+}
+
+export function getFeaturedVehicle(
+  vehicles: PassengerMapVehicleView[],
+  userPosition: Coordinates | null,
+) {
+  if (vehicles.length === 0) {
+    return null
+  }
+
+  return [...vehicles].sort((left, right) => {
+    const leftStatusRank = left.operationalStatus === 'active_recent' ? 0 : 1
+    const rightStatusRank = right.operationalStatus === 'active_recent' ? 0 : 1
+
+    if (leftStatusRank !== rightStatusRank) {
+      return leftStatusRank - rightStatusRank
+    }
+
+    if (userPosition) {
+      const leftDistance = getDistanceBetweenPointsMeters(userPosition, left.position)
+      const rightDistance = getDistanceBetweenPointsMeters(userPosition, right.position)
+
+      if (Math.abs(leftDistance - rightDistance) > 50) {
+        return leftDistance - rightDistance
+      }
+    }
+
+    return new Date(right.lastUpdate).getTime() - new Date(left.lastUpdate).getTime()
+  })[0]
+}
+
+function getDistanceBetweenPointsMeters(first: Coordinates, second: Coordinates) {
+  const earthRadiusMeters = 6_371_000
+  const latDeltaRadians = degreesToRadians(second.lat - first.lat)
+  const lngDeltaRadians = degreesToRadians(second.lng - first.lng)
+  const firstLatRadians = degreesToRadians(first.lat)
+  const secondLatRadians = degreesToRadians(second.lat)
+
+  const haversine =
+    Math.sin(latDeltaRadians / 2) * Math.sin(latDeltaRadians / 2) +
+    Math.cos(firstLatRadians) *
+      Math.cos(secondLatRadians) *
+      Math.sin(lngDeltaRadians / 2) *
+      Math.sin(lngDeltaRadians / 2)
+
+  return 2 * earthRadiusMeters * Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine))
+}
+
+function degreesToRadians(value: number) {
+  return (value * Math.PI) / 180
 }
 
 export function getRouteBoundsPoints(routes: BusRoute[]) {

@@ -1,5 +1,5 @@
 import { ConvexError } from 'convex/values'
-import type { Id } from '../_generated/dataModel'
+import type { Doc, Id } from '../_generated/dataModel'
 import type { DatabaseReader } from '../_generated/server'
 
 export async function getOpenServices(db: DatabaseReader) {
@@ -21,46 +21,44 @@ export async function getOpenServiceForDriver(
   db: DatabaseReader,
   driverId: Id<'users'>,
 ) {
-  const activeService = await db
-    .query('activeServices')
-    .withIndex('by_driver_status', (q) =>
-      q.eq('driverId', driverId).eq('status', 'active'),
-    )
-    .first()
+  const [activeServices, pausedServices] = await Promise.all([
+    db
+      .query('activeServices')
+      .withIndex('by_driver_status', (q) =>
+        q.eq('driverId', driverId).eq('status', 'active'),
+      )
+      .collect(),
+    db
+      .query('activeServices')
+      .withIndex('by_driver_status', (q) =>
+        q.eq('driverId', driverId).eq('status', 'paused'),
+      )
+      .collect(),
+  ])
 
-  if (activeService) {
-    return activeService
-  }
-
-  return await db
-    .query('activeServices')
-    .withIndex('by_driver_status', (q) =>
-      q.eq('driverId', driverId).eq('status', 'paused'),
-    )
-    .first()
+  return ensureSingleOpenService([...activeServices, ...pausedServices], 'conductor')
 }
 
 export async function getOpenServiceForVehicle(
   db: DatabaseReader,
   vehicleId: Id<'vehicles'>,
 ) {
-  const activeService = await db
-    .query('activeServices')
-    .withIndex('by_vehicle_status', (q) =>
-      q.eq('vehicleId', vehicleId).eq('status', 'active'),
-    )
-    .first()
+  const [activeServices, pausedServices] = await Promise.all([
+    db
+      .query('activeServices')
+      .withIndex('by_vehicle_status', (q) =>
+        q.eq('vehicleId', vehicleId).eq('status', 'active'),
+      )
+      .collect(),
+    db
+      .query('activeServices')
+      .withIndex('by_vehicle_status', (q) =>
+        q.eq('vehicleId', vehicleId).eq('status', 'paused'),
+      )
+      .collect(),
+  ])
 
-  if (activeService) {
-    return activeService
-  }
-
-  return await db
-    .query('activeServices')
-    .withIndex('by_vehicle_status', (q) =>
-      q.eq('vehicleId', vehicleId).eq('status', 'paused'),
-    )
-    .first()
+  return ensureSingleOpenService([...activeServices, ...pausedServices], 'unidad')
 }
 
 export async function getOpenServiceForSession(
@@ -97,4 +95,21 @@ export async function getLatestLocationForService(
     )
     .order('desc')
     .first()
+}
+
+function ensureSingleOpenService(
+  services: Doc<'activeServices'>[],
+  scope: 'conductor' | 'unidad',
+) {
+  if (services.length === 0) {
+    return null
+  }
+
+  if (services.length > 1) {
+    throw new ConvexError(
+      `Se detectaron multiples servicios abiertos para la misma ${scope}. Corrige el estado operativo antes de continuar.`,
+    )
+  }
+
+  return services[0]
 }

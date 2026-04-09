@@ -70,7 +70,7 @@ export function usePassengerGeolocation() {
     watchIdRef.current = null
   }, [])
 
-  const startWatching = useCallback(() => {
+  const startWatching = useCallback((requestedByUser = true) => {
     if (typeof navigator === 'undefined' || !('geolocation' in navigator)) {
       setPermissionState('unsupported')
       setIsRequestingPermission(false)
@@ -84,7 +84,7 @@ export function usePassengerGeolocation() {
       return
     }
 
-    setIsRequestingPermission(true)
+    setIsRequestingPermission(requestedByUser)
     setErrorMessage(null)
 
     watchIdRef.current = navigator.geolocation.watchPosition(
@@ -134,10 +134,27 @@ export function usePassengerGeolocation() {
         }
 
         permissionStatusRef.current = permissionStatus
-        setPermissionState(normalizePermissionState(permissionStatus.state))
+        const nextPermissionState = normalizePermissionState(permissionStatus.state)
+        setPermissionState(nextPermissionState)
+
+        if (nextPermissionState === 'granted') {
+          startWatching(false)
+        }
 
         permissionStatus.onchange = () => {
-          setPermissionState(normalizePermissionState(permissionStatus.state))
+          const changedPermissionState = normalizePermissionState(
+            permissionStatus.state,
+          )
+          setPermissionState(changedPermissionState)
+
+          if (changedPermissionState === 'granted') {
+            startWatching(false)
+            return
+          }
+
+          if (changedPermissionState === 'denied') {
+            clearWatch()
+          }
         }
       })
       .catch(() => {
@@ -153,18 +170,9 @@ export function usePassengerGeolocation() {
         permissionStatusRef.current.onchange = null
       }
     }
-  }, [])
-
-  useEffect(() => {
-    const timeoutId = window.setTimeout(() => {
-      startWatching()
-    }, 0)
-
-    return () => {
-      window.clearTimeout(timeoutId)
-      clearWatch()
-    }
   }, [clearWatch, startWatching])
+
+  useEffect(() => clearWatch, [clearWatch])
 
   return {
     permissionState,
@@ -173,6 +181,6 @@ export function usePassengerGeolocation() {
     accuracyMeters,
     capturedAt,
     errorMessage,
-    requestPermission: startWatching,
+    requestPermission: () => startWatching(true),
   }
 }

@@ -8,9 +8,9 @@ const seedTimestamp = '2026-04-05T16:20:00-07:00'
 
 const driverSeeds = [
   {
-    emails: ['operador.demo@vabus.app', 'conductor.centro@vabus.app'],
+    emails: ['conductor.centro@vabus.app'],
     email: 'conductor.centro@vabus.app',
-    name: 'Conductor Centro',
+    name: 'Operador Centro',
     password: 'Conductor123',
     defaultRouteImportKey: 'urbano:urbano-1',
     defaultVehicleUnitNumber: 'Unidad 17',
@@ -238,16 +238,23 @@ export const seedDatabase = mutation({
       })
     }
 
-    const existingActiveServices = await db
-      .query('activeServices')
-      .withIndex('by_status', (q) => q.eq('status', 'active'))
-      .collect()
+    const [existingActiveServices, existingPausedServices] = await Promise.all([
+      db
+        .query('activeServices')
+        .withIndex('by_status', (q) => q.eq('status', 'active'))
+        .collect(),
+      db
+        .query('activeServices')
+        .withIndex('by_status', (q) => q.eq('status', 'paused'))
+        .collect(),
+    ])
+    const existingOpenServices = [...existingActiveServices, ...existingPausedServices]
 
     let normalizedServices = 0
     const seededDriverIds = new Set(Object.values(driverIds))
     const seededVehicleIds = new Set(Object.values(vehicleIds))
 
-    for (const service of existingActiveServices) {
+    for (const service of existingOpenServices) {
       if (
         seededDriverIds.has(service.driverId) ||
         seededVehicleIds.has(service.vehicleId)

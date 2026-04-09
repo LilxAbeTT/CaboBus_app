@@ -12,6 +12,8 @@ import {
   getOpenServiceForDriver,
   getOpenServiceForVehicle,
 } from './lib/services'
+import { getOperationalStatusForService } from './lib/serviceOperationalState'
+import { recordSystemEvent } from './lib/systemEvents'
 
 async function getAssignedVehicle(
   db: DatabaseReader,
@@ -66,7 +68,10 @@ export const getPanelState = query({
         lastLocationUpdateAt: currentService.lastLocationUpdateAt ?? undefined,
         lastPosition: currentService.lastPosition,
         lastLocationSource: currentService.lastLocationSource,
-        operationalStatus: undefined,
+        operationalStatus: getOperationalStatusForService({
+          activeService: currentService,
+          nowMs: Date.now(),
+        }),
       }
     }
 
@@ -159,6 +164,16 @@ export const activateService = mutation({
       defaultRouteId: route._id,
     })
 
+    await recordSystemEvent(db, {
+      category: 'service',
+      title: 'Servicio iniciado',
+      description: `${vehicle.unitNumber} inicio servicio en ${route.name}.`,
+      actorName: driver.name,
+      actorRole: 'driver',
+      targetType: 'service',
+      targetId: serviceId,
+    })
+
     return {
       serviceId,
       routeId: route._id,
@@ -187,6 +202,16 @@ export const pauseCurrentService = mutation({
       status: 'paused',
     })
 
+    await recordSystemEvent(db, {
+      category: 'service',
+      title: 'Servicio pausado',
+      description: `${currentService.vehicleUnitNumber ?? 'Unidad'} pauso su servicio en ${currentService.routeName ?? 'ruta activa'}.`,
+      actorName: driver.name,
+      actorRole: 'driver',
+      targetType: 'service',
+      targetId: currentService._id,
+    })
+
     return {
       serviceId: currentService._id,
       status: 'paused',
@@ -212,6 +237,16 @@ export const resumeCurrentService = mutation({
 
     await db.patch(currentService._id, {
       status: 'active',
+    })
+
+    await recordSystemEvent(db, {
+      category: 'service',
+      title: 'Servicio reanudado',
+      description: `${currentService.vehicleUnitNumber ?? 'Unidad'} reanudo su servicio en ${currentService.routeName ?? 'ruta activa'}.`,
+      actorName: driver.name,
+      actorRole: 'driver',
+      targetType: 'service',
+      targetId: currentService._id,
     })
 
     return {
@@ -246,6 +281,16 @@ export const finishCurrentService = mutation({
 
     await db.patch(currentService.vehicleId, {
       status: 'available',
+    })
+
+    await recordSystemEvent(db, {
+      category: 'service',
+      title: 'Servicio finalizado',
+      description: `${currentService.vehicleUnitNumber ?? 'Unidad'} finalizo su servicio en ${currentService.routeName ?? 'ruta activa'}.`,
+      actorName: driver.name,
+      actorRole: 'driver',
+      targetType: 'service',
+      targetId: currentService._id,
     })
 
     return {
@@ -371,6 +416,16 @@ export const changeAssignedRoute = mutation({
         lastLocationUpdateAt: undefined,
         lastPosition: undefined,
         lastLocationSource: undefined,
+      })
+
+      await recordSystemEvent(db, {
+        category: 'route',
+        title: 'Ruta reasignada',
+        description: `${driver.name} cambio su servicio a ${route.name}.`,
+        actorName: driver.name,
+        actorRole: 'driver',
+        targetType: 'route',
+        targetId: route._id,
       })
     }
 

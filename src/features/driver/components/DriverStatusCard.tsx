@@ -5,9 +5,11 @@ import { api } from '../../../../convex/_generated/api'
 import type { AuthenticatedSession } from '../../../types/domain'
 import { useCurrentTime } from '../../../hooks/useCurrentTime'
 import {
+  REALTIME_ROUTE_SANITY_MAX_DISTANCE_METERS,
   evaluateBrowserSignalPlausibility,
   evaluateRealtimeSignalDispatch,
   formatElapsedSignalTime,
+  getMinimumDistanceToRouteMeters,
 } from '../../../lib/trackingSignal'
 import {
   useBrowserLocationTracking,
@@ -70,7 +72,6 @@ export function DriverStatusCard({
     readStoredAutoSharePreference(session.user.id),
   )
 
-  const showManualFallback = false
   const lastSentSignalRef = useRef<{
     recordedAt: string | null
     position: { lat: number; lng: number } | null
@@ -80,6 +81,7 @@ export function DriverStatusCard({
   })
 
   const currentService = panelState?.currentService ?? null
+  const showManualFallback = currentService?.status === 'active'
   const hasAssignedVehicle = Boolean(panelState?.vehicle)
   const isRealtimeBusy =
     trackingStatus === 'requesting_permission' ||
@@ -124,7 +126,21 @@ export function DriverStatusCard({
   )
 
   const suggestedPoint = useMemo(() => {
-    if (currentService?.lastPosition) {
+    if (
+      currentService?.lastPosition &&
+      routeInView &&
+      (() => {
+        const distanceToRouteMeters = getMinimumDistanceToRouteMeters(
+          currentService.lastPosition,
+          routeInView.segments,
+        )
+
+        return (
+          distanceToRouteMeters === null ||
+          distanceToRouteMeters <= REALTIME_ROUTE_SANITY_MAX_DISTANCE_METERS
+        )
+      })()
+    ) {
       return currentService.lastPosition
     }
 
@@ -229,7 +245,7 @@ export function DriverStatusCard({
       if (!dispatchDecision.shouldSend && dispatchDecision.reason) {
         return {
           accepted: false,
-          rejectionMessage: getTrackingRejectionMessage(dispatchDecision.reason),
+          shouldContinue: true,
         }
       }
 
@@ -352,25 +368,23 @@ export function DriverStatusCard({
   }
 
   const handlePauseRoute = () => {
-    stopTracking()
-    setShouldAutoResumeShare(false)
-
     runAction(async () => {
       await pauseCurrentService({
         sessionToken: session.token,
       })
+      stopTracking()
+      setShouldAutoResumeShare(false)
       setFeedbackMessage('Ruta pausada.')
     })
   }
 
   const handleFinishRoute = () => {
-    stopTracking()
-    setShouldAutoResumeShare(false)
-
     runAction(async () => {
       await finishCurrentService({
         sessionToken: session.token,
       })
+      stopTracking()
+      setShouldAutoResumeShare(false)
       setFeedbackMessage('Ruta finalizada.')
     })
   }

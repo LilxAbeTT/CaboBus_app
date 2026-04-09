@@ -8,6 +8,17 @@ function getRouteBounds(route: BusRoute) {
   )
 }
 
+function areCoordinatesEqual(
+  left: Coordinates | null,
+  right: Coordinates | null,
+) {
+  if (!left || !right) {
+    return false
+  }
+
+  return left.lat === right.lat && left.lng === right.lng
+}
+
 export function DriverRouteMap({
   route,
   livePosition,
@@ -105,7 +116,11 @@ export function DriverRouteMap({
         .bindPopup('Tu ubicacion actual')
     }
 
-    if (lastSharedPosition && primaryPosition && lastSharedPosition !== primaryPosition) {
+    if (
+      lastSharedPosition &&
+      primaryPosition &&
+      !areCoordinatesEqual(lastSharedPosition, primaryPosition)
+    ) {
       L.circleMarker([lastSharedPosition.lat, lastSharedPosition.lng], {
         radius: 6,
         color: '#0f766e',
