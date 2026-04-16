@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 
 import type { BusRoute } from '../../../types/domain'
 
-const passengerRouteSelectionStorageKey = 'vabus.passenger-map.selected-route-id'
+const passengerRouteSelectionStorageKey = 'cabobus.passenger-map.selected-route-id'
 
 export function usePassengerRouteSelection(routes: BusRoute[]) {
   const [selectedRouteId, setSelectedRouteId] = useState<string | null>(() =>

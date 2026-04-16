@@ -7,6 +7,8 @@ export function DriverStatusSummary({
   routeInView,
   currentService,
   lastSignalLabel,
+  trackingModeLabel,
+  backgroundSupportLabel,
   isLoggingOut,
   isSubmitting,
   isShareRunning,
@@ -22,6 +24,8 @@ export function DriverStatusSummary({
   routeInView: BusRoute | null
   currentService: DriverPanelCurrentService | null
   lastSignalLabel: string
+  trackingModeLabel: string
+  backgroundSupportLabel: string
   isLoggingOut: boolean
   isSubmitting: boolean
   isShareRunning: boolean
@@ -127,6 +131,12 @@ export function DriverStatusSummary({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          <span className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600">
+            {trackingModeLabel}
+          </span>
+          <span className="rounded-full bg-sky-100 px-3 py-1.5 text-xs font-semibold text-sky-800">
+            {backgroundSupportLabel}
+          </span>
           <span className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600">
             Ultima senal: {lastSignalLabel}
           </span>

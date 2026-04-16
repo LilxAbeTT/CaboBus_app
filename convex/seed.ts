@@ -8,16 +8,16 @@ const seedTimestamp = '2026-04-05T16:20:00-07:00'
 
 const driverSeeds = [
   {
-    emails: ['conductor.centro@vabus.app'],
-    email: 'conductor.centro@vabus.app',
+    emails: ['conductor.centro@cabobus.app'],
+    email: 'conductor.centro@cabobus.app',
     name: 'Operador Centro',
     password: 'Conductor123',
     defaultRouteImportKey: 'urbano:urbano-1',
     defaultVehicleUnitNumber: 'Unidad 17',
   },
   {
-    emails: ['conductor.guaymitas@vabus.app'],
-    email: 'conductor.guaymitas@vabus.app',
+    emails: ['conductor.guaymitas@cabobus.app'],
+    email: 'conductor.guaymitas@cabobus.app',
     name: 'Conductora Guaymitas',
     password: 'Conductor123',
     defaultRouteImportKey: 'colectivo:colectivo-1',
@@ -27,9 +27,9 @@ const driverSeeds = [
 
 const adminSeeds = [
   {
-    emails: ['admin@vabus.app'],
-    email: 'admin@vabus.app',
-    name: 'Administracion VaBus',
+    emails: ['admin@cabobus.app'],
+    email: 'admin@cabobus.app',
+    name: 'Administracion CaboBus',
     password: 'Admin12345',
   },
 ]

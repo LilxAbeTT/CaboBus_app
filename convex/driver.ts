@@ -6,12 +6,12 @@ import {
   getActiveServiceRouteFields,
   getActiveServiceSnapshotFields,
 } from './lib/activeServiceSnapshot'
-import { evaluateServerLocationPlausibility } from './lib/location'
-import { getRouteSegments, toRouteSummary } from './lib/routes'
+import { toRouteSummary } from './lib/routes'
 import {
   getOpenServiceForDriver,
   getOpenServiceForVehicle,
 } from './lib/services'
+import { recordDriverLocationUpdate } from './lib/driverLocationUpdates'
 import { getOperationalStatusForService } from './lib/serviceOperationalState'
 import { recordSystemEvent } from './lib/systemEvents'
 
@@ -306,65 +306,19 @@ export const addLocationUpdate = mutation({
     lat: v.number(),
     lng: v.number(),
     accuracyMeters: v.optional(v.number()),
+    capturedAt: v.optional(v.string()),
   },
-  handler: async ({ db }, { sessionToken, lat, lng, accuracyMeters }) => {
-    const { user: driver } = await requireAuthenticatedSession(
-      db,
+  handler: async (
+    { db },
+    { sessionToken, lat, lng, accuracyMeters, capturedAt },
+  ) => {
+    return await recordDriverLocationUpdate(db, {
       sessionToken,
-      'driver',
-    )
-    const currentService = await getOpenServiceForDriver(db, driver._id)
-
-    if (!currentService || currentService.status !== 'active') {
-      throw new ConvexError(
-        'Activa o reanuda un servicio antes de enviar ubicacion.',
-      )
-    }
-
-    const route = await db.get(currentService.routeId)
-
-    if (!route) {
-      throw new ConvexError('La ruta activa no existe.')
-    }
-
-    const plausibility = evaluateServerLocationPlausibility({
-      accuracyMeters: accuracyMeters ?? null,
-      nextPosition: { lat, lng },
-      routeSegments: getRouteSegments(route),
+      lat,
+      lng,
+      accuracyMeters,
+      capturedAt,
     })
-
-    if (!plausibility.accepted) {
-      if (plausibility.reason === 'low_accuracy') {
-        throw new ConvexError(
-          'La precision del GPS es demasiado baja para compartir esta ubicacion.',
-        )
-      }
-
-      throw new ConvexError(
-        'La ubicacion recibida cae demasiado lejos de la ruta activa.',
-      )
-    }
-
-    const recordedAt = new Date().toISOString()
-    const locationUpdateId = await db.insert('locationUpdates', {
-      activeServiceId: currentService._id,
-      vehicleId: currentService.vehicleId,
-      routeId: route._id,
-      position: { lat, lng },
-      recordedAt,
-      source: 'device',
-    })
-
-    await db.patch(currentService._id, {
-      lastLocationUpdateAt: recordedAt,
-      lastPosition: { lat, lng },
-      lastLocationSource: 'device',
-    })
-
-    return {
-      locationUpdateId,
-      recordedAt,
-    }
   },
 })
 

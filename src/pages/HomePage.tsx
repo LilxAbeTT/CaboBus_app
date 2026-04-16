@@ -1,16 +1,17 @@
-import { Link } from 'react-router'
+import { Link, Navigate } from 'react-router'
+import { isNativeApp } from '../lib/platform'
 
 const passengerAccess = {
   title: 'Mapa para pasajeros',
   href: '/passenger-map',
-  description: 'Consulta rutas activas y unidades en tiempo real.',
-  actionLabel: 'Ver mapa en vivo',
+  description: 'Consulta rutas activas y unidades de San José del Cabo en tiempo real.',
+  actionLabel: 'Ver mapa',
 }
 
 const driverAccess = {
-  title: 'Ingreso conductor',
+  title: 'Ingreso para conductor',
   href: '/driver/login',
-  description: 'Inicia sesion para abrir servicio y compartir ubicacion.',
+  description: 'Inicia sesión para elegir ruta y compartir ubicación en tiempo real.',
   actionLabel: 'Entrar como conductor',
 }
 
@@ -70,6 +71,10 @@ function ArrowIcon() {
 }
 
 export function HomePage() {
+  if (isNativeApp) {
+    return <Navigate to="/driver/login" replace />
+  }
+
   return (
     <section className="mx-auto flex w-full max-w-3xl items-center justify-center">
       <div className="panel relative w-full overflow-hidden">
@@ -82,18 +87,15 @@ export function HomePage() {
           <div className="text-center">
             <img
               src="/logo.png"
-              alt="VaBus"
+              alt="CaboBus"
               className="mx-auto h-44 w-72 object-contain sm:h-52 sm:w-80"
             />
             <div className="mt-4 flex flex-wrap items-center justify-center gap-2.5">
               <span className="inline-flex items-center gap-2 rounded-full border border-teal-200 bg-teal-50/90 px-3 py-1.5 text-xs font-semibold text-teal-800">
-                <MapPinIcon />
-                Rutas activas
-              </span>
-              <span className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-white/90 px-3 py-1.5 text-xs font-semibold text-slate-700">
                 <BusIcon />
-                Ubicaciones en vivo
+                San José del Cabo, BCS
               </span>
+              
             </div>
           </div>
 
@@ -101,26 +103,16 @@ export function HomePage() {
             <article className="rounded-[2rem] border border-white/90 bg-gradient-to-br from-teal-100 via-cyan-50 to-white p-5 text-left shadow-[0_24px_45px_-30px_rgba(15,35,54,0.38)] sm:p-6">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="eyebrow">Acceso principal</p>
                   <h2 className="mt-3 font-display text-3xl text-slate-900">
                     {passengerAccess.title}
                   </h2>
                 </div>
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-teal-700 shadow-[0_14px_30px_-20px_rgba(13,148,136,0.9)]">
-                  <MapPinIcon />
-                </div>
+                
               </div>
               <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600 sm:text-base">
                 {passengerAccess.description}
               </p>
-              <div className="mt-4 flex flex-wrap gap-2">
-                <span className="rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-slate-600">
-                  Sin registro
-                </span>
-                <span className="rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-slate-600">
-                  Vista rapida
-                </span>
-              </div>
+              
               <Link
                 to={passengerAccess.href}
                 className="mt-5 flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-teal-700 sm:mt-6"

@@ -1,12 +1,12 @@
-# VaBus_app - Contexto de Continuidad
+# CaboBus - Contexto de Continuidad
 
 Este documento resume el estado actual del proyecto para continuar en otro chat sin perder contexto.
 
-La fuente principal de verdad sigue siendo [agents.md] (/VaBus_app/agents.md). Este archivo es un handoff operativo basado en ese contexto y en el estado real del repositorio.
+La fuente principal de verdad sigue siendo [agents.md] (/CaboBus_app/agents.md). Este archivo es un handoff operativo basado en ese contexto y en el estado real del repositorio.
 
 ## 1. Vision del proyecto
 
-VaBus es una plataforma de movilidad urbana en tiempo real para San Jose del Cabo, BCS, Mexico.
+CaboBus es una plataforma de movilidad urbana en tiempo real para San Jose del Cabo, BCS, Mexico.
 
 Objetivo del MVP:
 - pasajero: ver rutas cargadas, unidades activas y ultima actualizacion en mapa;
@@ -105,7 +105,7 @@ Backend ya integrado con modelos iniciales para:
 - `activeServices`
 - `locationUpdates`
 
-Schema actual principal en [schema.ts](C:/Users/F4250/Documents/VaBus_app/convex/schema.ts).
+Schema actual principal en [schema.ts](C:/Users/larr_/Documents/CaboBus_app/convex/schema.ts).
 
 Nota importante:
 - la tabla `routes` mantiene campos opcionales legacy (`path`, `importKey`, `segments`, etc.) para compatibilidad/migracion de datos antiguos locales;
@@ -114,17 +114,17 @@ Nota importante:
 ### Rutas reales importadas
 
 Archivos fuente disponibles:
-- [sjc_urbano_routes.kml](C:/Users/F4250/Documents/VaBus_app/data/raw/sjc_urbano_routes.kml)
-- [sjc_colectivo_routes.kml](C:/Users/F4250/Documents/VaBus_app/data/raw/sjc_colectivo_routes.kml)
+- [sjc_urbano_routes.kml](C:/Users/larr_/Documents/CaboBus_app/data/raw/sjc_urbano_routes.kml)
+- [sjc_colectivo_routes.kml](C:/Users/larr_/Documents/CaboBus_app/data/raw/sjc_colectivo_routes.kml)
 
 Pipeline ya implementado:
-- parser KML en [kml.ts](C:/Users/F4250/Documents/VaBus_app/scripts/routes/kml.ts)
-- normalizacion en [normalize.ts](C:/Users/F4250/Documents/VaBus_app/scripts/routes/normalize.ts)
-- generacion de artefactos en [prepare.ts](C:/Users/F4250/Documents/VaBus_app/scripts/routes/prepare.ts)
+- parser KML en [kml.ts](C:/Users/larr_/Documents/CaboBus_app/scripts/routes/kml.ts)
+- normalizacion en [normalize.ts](C:/Users/larr_/Documents/CaboBus_app/scripts/routes/normalize.ts)
+- generacion de artefactos en [prepare.ts](C:/Users/larr_/Documents/CaboBus_app/scripts/routes/prepare.ts)
 
 Artefactos generados:
-- [routes.geojson](C:/Users/F4250/Documents/VaBus_app/data/processed/routes.geojson)
-- [importedRoutes.generated.ts](C:/Users/F4250/Documents/VaBus_app/convex/data/importedRoutes.generated.ts)
+- [routes.geojson](C:/Users/larr_/Documents/CaboBus_app/data/processed/routes.geojson)
+- [importedRoutes.generated.ts](C:/Users/larr_/Documents/CaboBus_app/convex/data/importedRoutes.generated.ts)
 
 Estado actual de rutas:
 - 15 rutas reales importadas y sembradas en Convex;
@@ -145,9 +145,9 @@ Estado actual:
 - persiste la ruta seleccionada en `localStorage`.
 
 Archivos clave:
-- [PassengerMapView.tsx](C:/Users/F4250/Documents/VaBus_app/src/features/map/components/PassengerMapView.tsx)
-- [usePassengerMapSnapshot.ts](C:/Users/F4250/Documents/VaBus_app/src/features/map/hooks/usePassengerMapSnapshot.ts)
-- [usePassengerRouteSelection.ts](C:/Users/F4250/Documents/VaBus_app/src/features/map/hooks/usePassengerRouteSelection.ts)
+- [PassengerMapView.tsx](C:/Users/larr_/Documents/CaboBus_app/src/features/map/components/PassengerMapView.tsx)
+- [usePassengerMapSnapshot.ts](C:/Users/larr_/Documents/CaboBus_app/src/features/map/hooks/usePassengerMapSnapshot.ts)
+- [usePassengerRouteSelection.ts](C:/Users/larr_/Documents/CaboBus_app/src/features/map/hooks/usePassengerRouteSelection.ts)
 
 ### DriverPanel
 
@@ -166,14 +166,14 @@ Ademas:
 - ambos modos escriben por la misma mutacion de Convex para evitar logica duplicada.
 
 Archivos clave:
-- [DriverStatusCard.tsx](C:/Users/F4250/Documents/VaBus_app/src/features/driver/components/DriverStatusCard.tsx)
-- [useDriverSession.ts](C:/Users/F4250/Documents/VaBus_app/src/features/driver/hooks/useDriverSession.ts)
-- [useBrowserLocationTracking.ts](C:/Users/F4250/Documents/VaBus_app/src/features/driver/hooks/useBrowserLocationTracking.ts)
-- [driver.ts](C:/Users/F4250/Documents/VaBus_app/convex/driver.ts)
+- [DriverStatusCard.tsx](C:/Users/larr_/Documents/CaboBus_app/src/features/driver/components/DriverStatusCard.tsx)
+- [useDriverSession.ts](C:/Users/larr_/Documents/CaboBus_app/src/features/driver/hooks/useDriverSession.ts)
+- [useBrowserLocationTracking.ts](C:/Users/larr_/Documents/CaboBus_app/src/features/driver/hooks/useBrowserLocationTracking.ts)
+- [driver.ts](C:/Users/larr_/Documents/CaboBus_app/convex/driver.ts)
 
 ## 5. Tipos y dominio actual
 
-Tipos compartidos principales en [domain.ts](C:/Users/F4250/Documents/VaBus_app/src/types/domain.ts).
+Tipos compartidos principales en [domain.ts](C:/Users/larr_/Documents/CaboBus_app/src/types/domain.ts).
 
 Formas importantes:
 - `BusRoute` usa `segments` en vez de `path` como formato canonico del frontend;
@@ -273,5 +273,4 @@ Si se quiere seguir por otra via, la siguiente opcion mas coherente es:
 
 Puedes usar algo como esto:
 
-> Lee `agents.md` y `CONTEXT_HANDOFF.md` como contexto principal. Conserva la arquitectura actual. Quiero continuar VaBus_app desde el estado real del repo, sin rehacer la base existente.
-
+> Lee `agents.md` y `CONTEXT_HANDOFF.md` como contexto principal. Conserva la arquitectura actual. Quiero continuar CaboBus desde el estado real del repo, sin rehacer la base existente.

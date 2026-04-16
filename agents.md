@@ -1,8 +1,8 @@
-# AGENTS.md — VaBus_app
+# AGENTS.md — CaboBus
 
 ## 1) Contexto del proyecto
 
-VaBus es una plataforma de movilidad urbana en tiempo real para San José del Cabo, BCS, México.
+CaboBus es una plataforma de movilidad urbana en tiempo real para San José del Cabo, BCS, México.
 
 Su objetivo es permitir que:
 - los conductores activen una ruta desde su dispositivo móvil y compartan su ubicación en tiempo real;
@@ -127,7 +127,7 @@ Inicialmente se prefiere Convex si resulta conveniente para el flujo del MVP.
 
 La estructura objetivo inicial puede ser:
 
-/VaBus_app
+/CaboBus_app
   /src
     /app
     /components

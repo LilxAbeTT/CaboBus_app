@@ -1,58 +1,61 @@
-# VaBus_app
+# CaboBus
 
-Base inicial del MVP de VaBus construida con React, Vite y TypeScript.
+MVP de movilidad urbana en tiempo real para San Jose del Cabo, BCS.
 
-## Stack actual
+El proyecto hoy incluye:
+
+- mapa publico para pasajeros;
+- panel web para administracion;
+- flujo de conductor en web;
+- app del conductor con Capacitor y tracking nativo en segundo plano;
+- backend en Convex;
+- rutas reales importadas desde KML.
+
+## Stack
 
 - React 19
 - Vite 8
 - TypeScript 5
 - Tailwind CSS 4
 - React Router 7
-- Convex
 - Leaflet + OpenStreetMap
+- Convex
+- Capacitor Android/iOS
 
-## Scripts
+## Arranque rapido
+
+1. Instala dependencias:
+   - `npm install`
+2. Levanta Convex en local:
+   - `npm run convex:dev`
+3. En otra terminal, inicia frontend:
+   - `npm run dev`
+4. Si necesitas volver a sembrar rutas, usuarios y unidades:
+   - `npm run convex:seed`
+
+## Scripts utiles
 
 - `npm run dev`
-- `npm run convex:dev`
-- `npm run convex:codegen`
-- `npm run convex:seed`
 - `npm run build`
 - `npm run lint`
 - `npm run preview`
+- `npm run convex:dev`
+- `npm run convex:codegen`
+- `npm run convex:seed`
+- `npm run routes:prepare`
+- `npm run cap:sync`
+- `npm run cap:android`
+- `npm run cap:ios`
 
-## Backend local
+## Notas operativas
 
-- Convex queda configurado con `.env.local`.
-- Para usar consultas reales del mapa, ejecuta `npm run convex:dev` en paralelo al frontend.
-- Para volver a sembrar datos iniciales, ejecuta `npm run convex:seed`.
+- `VITE_CONVEX_URL` y `VITE_CONVEX_SITE_URL` se leen desde `.env.local`.
+- El mapa del pasajero no requiere login.
+- Conductor y admin usan sesion minima propia con Convex.
+- La app nativa del conductor usa `POST /driver/location` para subir ubicaciones en segundo plano.
 
-## Estructura base
+## Referencia interna
 
-```text
-convex/
-  _generated/
-  passengerMap.ts
-  routes.ts
-  schema.ts
-  seed.ts
-  vehicles.ts
+Para estado real del repo, arquitectura actual y decisiones vigentes:
 
-src/
-  app/
-  components/
-  features/
-    admin/
-    auth/
-    driver/
-    map/
-    routes/
-    vehicles/
-  hooks/
-  lib/
-  pages/
-  services/
-  styles/
-  types/
-```
+- [project-map.md](C:\Users\larr_\Documents\CaboBus_app\.agents\project-map.md)

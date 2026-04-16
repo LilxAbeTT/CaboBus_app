@@ -254,7 +254,7 @@ function AdminDashboardContent({
           <div>
             <p className="eyebrow">Admin</p>
             <h2 className="mt-2 font-display text-2xl text-slate-900 sm:text-3xl">
-              Centro operativo VaBus
+              Centro operativo CaboBus
             </h2>
             <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
               Gestiona servicios abiertos, conductores, unidades y el catalogo de
@@ -413,7 +413,7 @@ function AdminDashboardContent({
           <input type="text" value={driverSearch} onChange={(event) => setDriverSearch(event.target.value)} placeholder="Buscar conductor" className="mt-4 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100" />
           <div className="mt-5 grid gap-4">
             <input type="text" value={driverForm.name} onChange={(event) => setDriverForm((current) => ({ ...current, name: event.target.value }))} placeholder="Nombre del conductor" className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100" />
-            <input type="email" value={driverForm.email} onChange={(event) => setDriverForm((current) => ({ ...current, email: event.target.value }))} placeholder="conductor@vabus.app" className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100" />
+            <input type="email" value={driverForm.email} onChange={(event) => setDriverForm((current) => ({ ...current, email: event.target.value }))} placeholder="conductor@cabobus.app" className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100" />
             <input type="password" value={driverForm.password} onChange={(event) => setDriverForm((current) => ({ ...current, password: event.target.value }))} placeholder={editingDriverId ? 'Nueva contrasena opcional' : 'Contrasena inicial'} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100" />
             <select value={driverForm.defaultRouteId} onChange={(event) => setDriverForm((current) => ({ ...current, defaultRouteId: event.target.value }))} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"><option value="">Sin ruta asignada</option>{dashboard.routes.map((route) => <option key={route.id} value={route.id}>{route.name} - {route.direction}</option>)}</select>
             <select value={driverForm.defaultVehicleId} onChange={(event) => setDriverForm((current) => ({ ...current, defaultVehicleId: event.target.value }))} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"><option value="">Sin unidad asignada</option>{dashboard.vehicles.map((vehicle) => <option key={vehicle.id} value={vehicle.id}>{vehicle.unitNumber} - {vehicle.label}{vehicle.assignedDriverNames.length > 0 ? ` (${vehicle.assignedDriverNames.join(', ')})` : ''}</option>)}</select>

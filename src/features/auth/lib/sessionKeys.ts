@@ -1,2 +1,2 @@
-export const driverSessionStorageKey = 'vabus.auth.driver'
-export const adminSessionStorageKey = 'vabus.auth.admin'
+export const driverSessionStorageKey = 'cabobus.auth.driver'
+export const adminSessionStorageKey = 'cabobus.auth.admin'

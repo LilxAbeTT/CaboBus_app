@@ -1,7 +1,7 @@
 import { ConvexError } from 'convex/values'
 import type { BusRoute } from '../../../types/domain'
 
-const AUTO_SHARE_STORAGE_PREFIX = 'vabus.driver.autoShare.'
+const AUTO_SHARE_STORAGE_PREFIX = 'cabobus.driver.autoShare.'
 
 export function getErrorMessage(error: unknown) {
   if (error instanceof ConvexError) {

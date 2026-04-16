@@ -46,7 +46,7 @@ Ownership sugerido:
 7. Validar con scripts minimos.
 8. Resumir que se cambio, que no, y siguiente paso.
 
-## Reglas de VaBus a respetar
+## Reglas de CaboBus a respetar
 
 - no reintroducir IDs demo fijos en flujos funcionales;
 - no duplicar la escritura de ubicaciones;

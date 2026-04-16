@@ -1,6 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import type { Coordinates } from '../../../types/domain'
+import type {
+  DriverLocationPermissionState,
+  DriverLocationReading,
+  DriverLocationSubmissionResult,
+  DriverLocationTrackingHookResult,
+  DriverTrackingStatus,
+} from './locationTrackingTypes'
 
 const PERMISSION_REQUEST_OPTIONS: PositionOptions = {
   enableHighAccuracy: false,
@@ -29,37 +36,9 @@ const CONTINUOUS_TRACKING_OPTIONS: PositionOptions = {
 
 const PREFETCHED_POSITION_MAX_AGE_MS = 45000
 
-export interface BrowserLocationReading {
-  coordinates: Coordinates
-  accuracyMeters: number | null
-  capturedAt: string
-}
-
-export interface BrowserLocationSubmissionResult {
-  accepted: boolean
-  recordedAt?: string
-  rejectionMessage?: string
-  shouldContinue?: boolean
-}
-
-export type BrowserGeolocationPermissionState =
-  | 'not_requested'
-  | 'granted'
-  | 'denied'
-  | 'unsupported'
-
-export type DriverTrackingStatus =
-  | 'stopped'
-  | 'requesting_permission'
-  | 'waiting_first_signal'
-  | 'first_signal_received'
-  | 'tracking'
-  | 'signal_timeout'
-  | 'error'
-
 function normalizePermissionState(
   permissionState: PermissionState,
-): BrowserGeolocationPermissionState {
+): DriverLocationPermissionState {
   switch (permissionState) {
     case 'granted':
       return 'granted'
@@ -124,9 +103,9 @@ function getContinuousTrackingErrorMessage(error: GeolocationPositionError) {
   }
 }
 
-export function useBrowserLocationTracking() {
+export function useBrowserLocationTracking(): DriverLocationTrackingHookResult {
   const [permissionState, setPermissionState] =
-    useState<BrowserGeolocationPermissionState>(() => {
+    useState<DriverLocationPermissionState>(() => {
       if (typeof navigator === 'undefined') {
         return 'not_requested'
       }
@@ -136,21 +115,21 @@ export function useBrowserLocationTracking() {
   const [trackingStatus, setTrackingStatus] =
     useState<DriverTrackingStatus>('stopped')
   const [trackingError, setTrackingError] = useState<string | null>(null)
-  const [lastBrowserPosition, setLastBrowserPosition] = useState<Coordinates | null>(
+  const [lastTrackedPosition, setLastTrackedPosition] = useState<Coordinates | null>(
     null,
   )
-  const [lastBrowserAt, setLastBrowserAt] = useState<string | null>(null)
-  const [lastBrowserAccuracyMeters, setLastBrowserAccuracyMeters] = useState<number | null>(
+  const [lastTrackedAt, setLastTrackedAt] = useState<string | null>(null)
+  const [lastTrackedAccuracyMeters, setLastTrackedAccuracyMeters] = useState<number | null>(
     null,
   )
 
   const watchIdRef = useRef<number | null>(null)
   const permissionStatusRef = useRef<PermissionStatus | null>(null)
-  const permissionStateRef = useRef<BrowserGeolocationPermissionState>(
+  const permissionStateRef = useRef<DriverLocationPermissionState>(
     permissionState,
   )
   const onLocationRef = useRef<
-    ((reading: BrowserLocationReading) => Promise<BrowserLocationSubmissionResult>) | null
+    ((reading: DriverLocationReading) => Promise<DriverLocationSubmissionResult>) | null
   >(null)
   const isSendingRef = useRef(false)
   const activeOperationIdRef = useRef(0)
@@ -220,9 +199,9 @@ export function useBrowserLocationTracking() {
       : null
     const capturedAt = new Date(position.timestamp).toISOString()
 
-    setLastBrowserPosition(coordinates)
-    setLastBrowserAt(capturedAt)
-    setLastBrowserAccuracyMeters(accuracyMeters)
+    setLastTrackedPosition(coordinates)
+    setLastTrackedAt(capturedAt)
+    setLastTrackedAccuracyMeters(accuracyMeters)
 
     try {
       const result = await onLocationRef.current({
@@ -431,8 +410,8 @@ export function useBrowserLocationTracking() {
 
   const startTracking = useCallback((
     onLocation: (
-      reading: BrowserLocationReading,
-    ) => Promise<BrowserLocationSubmissionResult>,
+      reading: DriverLocationReading,
+    ) => Promise<DriverLocationSubmissionResult>,
   ) => {
     if (typeof navigator === 'undefined' || !('geolocation' in navigator)) {
       permissionStateRef.current = 'unsupported'
@@ -483,7 +462,7 @@ export function useBrowserLocationTracking() {
           return
         }
 
-      if (!initialDelivery.accepted && !initialDelivery.shouldContinue) {
+        if (!initialDelivery.accepted && !initialDelivery.shouldContinue) {
           failTracking(
             'signal_timeout',
             initialDelivery.rejectionMessage ??
@@ -548,18 +527,23 @@ export function useBrowserLocationTracking() {
     })()
   }, [acquireInitialPosition, clearWatch, deliverPosition, failTracking, trackingStatus])
 
+  const isTracking =
+    watchIdRef.current !== null &&
+    (trackingStatus === 'first_signal_received' || trackingStatus === 'tracking')
+
   return {
     permissionState,
     trackingStatus,
     trackingError,
-    lastBrowserPosition,
-    lastBrowserAt,
-    lastBrowserAccuracyMeters,
-    isTracking:
-      watchIdRef.current !== null &&
-      (trackingStatus === 'first_signal_received' || trackingStatus === 'tracking'),
+    lastTrackedPosition,
+    lastTrackedAt,
+    lastTrackedAccuracyMeters,
+    isTracking,
+    trackingMode: 'browser',
+    supportsBackgroundTracking: false,
     requestPermission,
     startTracking,
     stopTracking,
+    openSettings: undefined,
   }
 }

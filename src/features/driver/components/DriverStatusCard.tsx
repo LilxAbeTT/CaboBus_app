@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import type { PluginListenerHandle } from '@capacitor/core'
+import { App } from '@capacitor/app'
 import { useMutation, useQuery } from 'convex/react'
 import type { Id } from '../../../../convex/_generated/dataModel'
 import { api } from '../../../../convex/_generated/api'
@@ -12,9 +14,19 @@ import {
   getMinimumDistanceToRouteMeters,
 } from '../../../lib/trackingSignal'
 import {
-  useBrowserLocationTracking,
-  type BrowserLocationReading,
-} from '../hooks/useBrowserLocationTracking'
+  useDriverLocationTracking,
+} from '../hooks/useDriverLocationTracking'
+import type { DriverLocationReading } from '../hooks/locationTrackingTypes'
+import {
+  appendQueuedNativeTrackingReading,
+  clearQueuedNativeTrackingReadings,
+  readQueuedNativeTrackingReadings,
+  writeQueuedNativeTrackingReadings,
+} from '../lib/nativeTrackingQueue'
+import {
+  NativeLocationUploadError,
+  uploadNativeLocationUpdate,
+} from '../lib/nativeLocationUpload'
 import { DriverRouteMap } from './DriverRouteMap'
 import {
   DriverPanelEmptyState,
@@ -41,11 +53,14 @@ export function DriverStatusCard({
     permissionState,
     trackingStatus,
     trackingError,
-    lastBrowserPosition,
+    lastTrackedPosition,
     requestPermission,
     startTracking,
     stopTracking,
-  } = useBrowserLocationTracking()
+    trackingMode,
+    supportsBackgroundTracking,
+    openSettings,
+  } = useDriverLocationTracking()
 
   const logout = useMutation(api.auth.logout)
   const activateService = useMutation(api.driver.activateService)
@@ -79,8 +94,11 @@ export function DriverStatusCard({
     recordedAt: null,
     position: null,
   })
+  const activeServiceIdRef = useRef<string | null>(null)
+  const previousServiceIdRef = useRef<string | null>(null)
 
   const currentService = panelState?.currentService ?? null
+  const isNativeBackgroundTracking = trackingMode === 'native-background'
   const showManualFallback = currentService?.status === 'active'
   const hasAssignedVehicle = Boolean(panelState?.vehicle)
   const isRealtimeBusy =
@@ -93,6 +111,13 @@ export function DriverStatusCard({
     currentService?.lastLocationUpdateAt ?? null,
     currentTimeMs,
   )
+  const trackingModeLabel = isNativeBackgroundTracking ? 'App nativa' : 'Navegador'
+  const backgroundSupportLabel = supportsBackgroundTracking
+    ? 'Segundo plano listo'
+    : 'Segundo plano no garantizado'
+  const backgroundCapabilityMessage = supportsBackgroundTracking
+    ? 'La app puede seguir compartiendo tu ubicacion con la pantalla bloqueada o minimizada mientras el servicio siga activo.'
+    : 'En navegador el tracking depende de mantener la pestana visible. Para segundo plano usa la app movil del conductor.'
 
   useEffect(() => {
     if (!panelState) {
@@ -111,6 +136,27 @@ export function DriverStatusCard({
       setPendingRouteId((currentValue) => currentValue || nextRouteId)
     }
   }, [currentService?.routeId, panelState])
+
+  useEffect(() => {
+    if (currentService?.id) {
+      activeServiceIdRef.current = currentService.id
+    }
+  }, [currentService?.id])
+
+  useEffect(() => {
+    const previousServiceId = previousServiceIdRef.current
+    const nextServiceId = currentService?.id ?? null
+
+    if (previousServiceId && previousServiceId !== nextServiceId) {
+      void clearQueuedNativeTrackingReadings(session.user.id, previousServiceId)
+    }
+
+    previousServiceIdRef.current = nextServiceId
+
+    if (!nextServiceId) {
+      activeServiceIdRef.current = null
+    }
+  }, [currentService?.id, session.user.id])
 
   const selectedRoute = useMemo(
     () =>
@@ -194,12 +240,18 @@ export function DriverStatusCard({
   }, [currentService?.status, panelState, shouldAutoResumeShare, stopTracking])
 
   const sendLocationUpdate = useCallback(
-    async (lat: number, lng: number, accuracyMeters?: number | null) => {
+    async (
+      lat: number,
+      lng: number,
+      accuracyMeters?: number | null,
+      capturedAt?: string,
+    ) => {
       const result = await addLocationUpdate({
         sessionToken: session.token,
         lat,
         lng,
         accuracyMeters: accuracyMeters ?? undefined,
+        capturedAt,
       })
 
       lastSentSignalRef.current = {
@@ -212,8 +264,66 @@ export function DriverStatusCard({
     [addLocationUpdate, session.token],
   )
 
-  const sendTrackedLocationUpdate = useCallback(
-    async (reading: BrowserLocationReading) => {
+  const flushQueuedNativeTrackingReadings = useCallback(async () => {
+    if (!isNativeBackgroundTracking) {
+      return 'flushed' as const
+    }
+
+    const serviceId = currentService?.id ?? activeServiceIdRef.current
+
+    if (!serviceId) {
+      return 'flushed' as const
+    }
+
+    const queuedReadings = await readQueuedNativeTrackingReadings(
+      session.user.id,
+      serviceId,
+    )
+
+    if (queuedReadings.length === 0) {
+      return 'flushed' as const
+    }
+
+    for (let index = 0; index < queuedReadings.length; index += 1) {
+      const queuedReading = queuedReadings[index]
+
+      try {
+        const result = await uploadNativeLocationUpdate({
+          sessionToken: session.token,
+          reading: queuedReading,
+        })
+
+        lastSentSignalRef.current = {
+          recordedAt: result.recordedAt,
+          position: queuedReading.coordinates,
+        }
+      } catch (error) {
+        if (error instanceof NativeLocationUploadError && error.retryable) {
+          await writeQueuedNativeTrackingReadings(
+            session.user.id,
+            serviceId,
+            queuedReadings.slice(index),
+          )
+
+          return 'queued' as const
+        }
+
+        await clearQueuedNativeTrackingReadings(session.user.id, serviceId)
+        throw error
+      }
+    }
+
+    await clearQueuedNativeTrackingReadings(session.user.id, serviceId)
+    return 'flushed' as const
+  }, [
+    currentService?.id,
+    isNativeBackgroundTracking,
+    session.token,
+    session.user.id,
+  ])
+
+  const sendBrowserTrackedLocationUpdate = useCallback(
+    async (reading: DriverLocationReading) => {
       if (!routeInView) {
         return {
           accepted: false,
@@ -253,6 +363,7 @@ export function DriverStatusCard({
         reading.coordinates.lat,
         reading.coordinates.lng,
         reading.accuracyMeters,
+        reading.capturedAt,
       )
 
       return {
@@ -261,6 +372,120 @@ export function DriverStatusCard({
       }
     },
     [routeInView, sendLocationUpdate],
+  )
+
+  const sendNativeTrackedLocationUpdate = useCallback(
+    async (reading: DriverLocationReading) => {
+      if (!routeInView) {
+        return {
+          accepted: false,
+          rejectionMessage: 'No hay una ruta activa para validar tu ubicacion.',
+        }
+      }
+
+      const plausibility = evaluateBrowserSignalPlausibility({
+        accuracyMeters: reading.accuracyMeters,
+        nextPosition: reading.coordinates,
+        routeSegments: routeInView.segments,
+      })
+
+      if (!plausibility.accepted) {
+        return {
+          accepted: false,
+          rejectionMessage: getTrackingRejectionMessage(
+            plausibility.reason ?? 'outside_route_zone',
+          ),
+        }
+      }
+
+      const dispatchDecision = evaluateRealtimeSignalDispatch({
+        lastSentAt: lastSentSignalRef.current.recordedAt,
+        lastSentPosition: lastSentSignalRef.current.position,
+        nextPosition: reading.coordinates,
+      })
+
+      if (!dispatchDecision.shouldSend && dispatchDecision.reason) {
+        return {
+          accepted: false,
+          shouldContinue: true,
+        }
+      }
+
+      const serviceId = currentService?.id ?? activeServiceIdRef.current
+
+      if (!serviceId) {
+        return {
+          accepted: false,
+          shouldContinue: true,
+          rejectionMessage:
+            'No se encontro el servicio activo para sincronizar esta ubicacion.',
+        }
+      }
+
+      const queueState = await flushQueuedNativeTrackingReadings()
+
+      if (queueState === 'queued') {
+        await appendQueuedNativeTrackingReading(session.user.id, serviceId, reading)
+
+        return {
+          accepted: false,
+          shouldContinue: true,
+          rejectionMessage:
+            'La app seguira guardando lecturas hasta recuperar conexion.',
+        }
+      }
+
+      try {
+        const result = await uploadNativeLocationUpdate({
+          sessionToken: session.token,
+          reading,
+        })
+
+        lastSentSignalRef.current = {
+          recordedAt: result.recordedAt,
+          position: reading.coordinates,
+        }
+
+        return {
+          accepted: true,
+          recordedAt: result.recordedAt,
+        }
+      } catch (error) {
+        if (error instanceof NativeLocationUploadError && error.retryable) {
+          await appendQueuedNativeTrackingReading(session.user.id, serviceId, reading)
+
+          return {
+            accepted: false,
+            shouldContinue: true,
+            rejectionMessage: error.message,
+          }
+        }
+
+        throw error
+      }
+    },
+    [
+      currentService?.id,
+      flushQueuedNativeTrackingReadings,
+      routeInView,
+      session.token,
+      session.user.id,
+    ],
+  )
+
+  const sendTrackedLocationUpdate = useCallback(
+    async (reading: DriverLocationReading) => {
+      if (isNativeBackgroundTracking) {
+        return await sendNativeTrackedLocationUpdate(reading)
+      }
+
+      return await sendBrowserTrackedLocationUpdate(reading)
+    },
+    [
+      isNativeBackgroundTracking,
+      sendBrowserTrackedLocationUpdate,
+      sendNativeTrackedLocationUpdate,
+    ],
   )
 
   useEffect(() => {
@@ -282,6 +507,46 @@ export function DriverStatusCard({
     shouldAutoResumeShare,
     startTracking,
     trackingStatus,
+  ])
+
+  useEffect(() => {
+    if (!isNativeBackgroundTracking || currentService?.status !== 'active') {
+      return
+    }
+
+    void flushQueuedNativeTrackingReadings().catch(() => {
+      // El proximo envio nativo reintentara la cola pendiente.
+    })
+  }, [
+    currentService?.status,
+    flushQueuedNativeTrackingReadings,
+    isNativeBackgroundTracking,
+  ])
+
+  useEffect(() => {
+    if (!isNativeBackgroundTracking) {
+      return
+    }
+
+    let listenerHandle: PluginListenerHandle | null = null
+
+    void App.addListener('appStateChange', ({ isActive }) => {
+      if (isActive && currentService?.status === 'active') {
+        void flushQueuedNativeTrackingReadings().catch(() => {
+          // El siguiente ciclo de tracking volvera a intentar.
+        })
+      }
+    }).then((handle) => {
+      listenerHandle = handle
+    })
+
+    return () => {
+      void listenerHandle?.remove()
+    }
+  }, [
+    currentService?.status,
+    flushQueuedNativeTrackingReadings,
+    isNativeBackgroundTracking,
   ])
 
   if (!panelState) {
@@ -348,15 +613,17 @@ export function DriverStatusCard({
 
     runAction(async () => {
       if (!currentService) {
-        await activateService({
+        const result = await activateService({
           sessionToken: session.token,
           routeId: selectedRoute.id as Id<'routes'>,
         })
+        activeServiceIdRef.current = result.serviceId
         setFeedbackMessage(`Ruta iniciada en ${selectedRoute.name}.`)
       } else if (currentService.status === 'paused') {
-        await resumeCurrentService({
+        const result = await resumeCurrentService({
           sessionToken: session.token,
         })
+        activeServiceIdRef.current = result.serviceId
         setFeedbackMessage('Ruta reanudada.')
       } else {
         setFeedbackMessage('Tu ruta ya esta activa.')
@@ -380,11 +647,18 @@ export function DriverStatusCard({
 
   const handleFinishRoute = () => {
     runAction(async () => {
+      const serviceId = currentService?.id ?? activeServiceIdRef.current
       await finishCurrentService({
         sessionToken: session.token,
       })
       stopTracking()
       setShouldAutoResumeShare(false)
+      activeServiceIdRef.current = null
+
+      if (serviceId) {
+        await clearQueuedNativeTrackingReadings(session.user.id, serviceId)
+      }
+
       setFeedbackMessage('Ruta finalizada.')
     })
   }
@@ -450,6 +724,8 @@ export function DriverStatusCard({
           routeInView={routeInView}
           currentService={currentService}
           lastSignalLabel={lastSignalLabel}
+          trackingModeLabel={trackingModeLabel}
+          backgroundSupportLabel={backgroundSupportLabel}
           isLoggingOut={isLoggingOut}
           isSubmitting={isSubmitting}
           isShareRunning={isShareRunning}
@@ -467,7 +743,7 @@ export function DriverStatusCard({
         <section className="panel overflow-hidden px-4 py-4 sm:px-5 sm:py-5">
           <DriverRouteMap
             route={routeInView}
-            livePosition={lastBrowserPosition}
+            livePosition={lastTrackedPosition}
             lastSharedPosition={currentService?.lastPosition ?? null}
           />
 
@@ -509,6 +785,10 @@ export function DriverStatusCard({
           </p>
         ) : null}
 
+        <p className="rounded-2xl bg-sky-50 px-4 py-3 text-sm text-sky-800">
+          {backgroundCapabilityMessage}
+        </p>
+
         {errorMessage ? (
           <p className="rounded-2xl bg-rose-50 px-4 py-3 text-sm text-rose-700">
             {errorMessage}
@@ -516,9 +796,20 @@ export function DriverStatusCard({
         ) : null}
 
         {trackingError ? (
-          <p className="rounded-2xl bg-amber-50 px-4 py-3 text-sm text-amber-700">
-            {trackingError}
-          </p>
+          <div className="rounded-2xl bg-amber-50 px-4 py-3 text-sm text-amber-700">
+            <p>{trackingError}</p>
+            {permissionState === 'denied' && openSettings ? (
+              <button
+                type="button"
+                onClick={() => {
+                  void openSettings()
+                }}
+                className="mt-3 min-h-10 rounded-full border border-amber-200 bg-white px-4 text-sm font-semibold text-amber-900 transition hover:border-amber-300 hover:bg-amber-100"
+              >
+                Abrir ajustes del sistema
+              </button>
+            ) : null}
+          </div>
         ) : null}
       </section>
 

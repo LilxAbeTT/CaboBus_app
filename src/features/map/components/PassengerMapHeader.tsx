@@ -68,7 +68,7 @@ export function PassengerMapHeader({
           >
             <img
               src="/logo.png"
-              alt="VaBus"
+              alt="CaboBus"
               className="h-12 w-16 object-contain"
             />
           </Link>
@@ -82,15 +82,7 @@ export function PassengerMapHeader({
               <RouteListIcon />
               Rutas
             </button>
-            <button
-              type="button"
-              onClick={onFocusRecommended}
-              disabled={!recommendedRoute}
-              className="flex min-h-11 items-center justify-center gap-2 rounded-full border border-amber-300 bg-amber-50 px-4 text-sm font-semibold text-amber-900 transition hover:border-amber-400 hover:bg-amber-100 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400"
-            >
-              <SparkIcon />
-              Sugerida
-            </button>
+            
             <Link
               to="/"
               className="flex min-h-11 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:border-teal-300 hover:text-teal-700"
@@ -108,9 +100,7 @@ export function PassengerMapHeader({
             {visibleVehiclesCount} unidad{visibleVehiclesCount === 1 ? '' : 'es'} visible
             {visibleVehiclesCount === 1 ? '' : 's'}
           </span>
-          <span className="rounded-full border border-amber-100 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-800">
-            {nearbyRoutesCount} ruta{nearbyRoutesCount === 1 ? '' : 's'} cerca
-          </span>
+          
           {selectedRouteName ? (
             <span className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700">
               Enfocada: {selectedRouteName}

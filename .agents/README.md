@@ -1,6 +1,6 @@
 ## .agents
 
-Carpeta de contexto operativo para trabajar VaBus_app con agentes y subagentes.
+Carpeta de contexto operativo para trabajar CaboBus con agentes y subagentes.
 
 Orden de lectura recomendado al iniciar cualquier chat:
 

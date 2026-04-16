@@ -80,7 +80,7 @@ export function RoleLoginCard({
                 type="email"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
-                placeholder="operacion@vabus.app"
+                placeholder="operacion@cabobus.app"
                 autoComplete="username"
                 className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
               />

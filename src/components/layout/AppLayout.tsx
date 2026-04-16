@@ -23,13 +23,13 @@ export function AppLayout({ children }: PropsWithChildren) {
             <div className="flex items-center gap-4 pr-0 lg:pr-6">
               <img
                 src="/logo.png"
-                alt="VaBus"
+                alt="CaboBus"
                 className="h-12 w-12 rounded-2xl bg-white/70 p-2 object-contain sm:h-14 sm:w-14"
               />
               <div>
                 <p className="eyebrow">Movilidad urbana</p>
                 <h1 className="font-display text-2xl text-slate-900 sm:text-4xl">
-                  VaBus
+                  CaboBus
                 </h1>
                 <p className="max-w-2xl text-sm leading-6 text-slate-600 sm:text-base">
                   Rutas y unidades activas en tiempo real para consulta rapida
