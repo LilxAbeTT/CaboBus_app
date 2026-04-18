@@ -62,7 +62,6 @@ import {
   getRouteGroups,
   getSignalBadgeClass,
   getSortedRoutesByDistance,
-  getTransportTypeLabel,
   getVehicleStatsByRoute,
   routeMatchesSearch,
   sortRoutesByUtility,
@@ -304,16 +303,23 @@ function PassengerMapContent({ snapshot }: { snapshot: PassengerMapSnapshot }) {
   const [centerOnUserRequestCount, setCenterOnUserRequestCount] = useState(0)
   const [mapLoadStatus, setMapLoadStatus] = useState<'loading' | 'ready' | 'error'>('loading')
   const [mapLoadError, setMapLoadError] = useState<string | null>(null)
+  const [shouldShowPinchHint, setShouldShowPinchHint] = useState(() => {
+    if (typeof window === 'undefined') {
+      return false
+    }
+
+    return (
+      window.matchMedia('(pointer: coarse)').matches &&
+      window.sessionStorage.getItem('cabobus-passenger-pinch-hint') !== '1'
+    )
+  })
   const {
     permissionState,
     isRequestingPermission,
-    isFollowingPosition,
     position: userPosition,
     accuracyMeters,
     errorMessage: userLocationError,
     requestPermission,
-    startFollowingPosition,
-    stopFollowingPosition,
   } = usePassengerGeolocation()
   const vehiclesWithRouteMeta = useMemo(
     () => decorateVehiclesWithRouteMeta(snapshot.activeVehicles, routes),
@@ -436,7 +442,6 @@ function PassengerMapContent({ snapshot }: { snapshot: PassengerMapSnapshot }) {
     permissionState,
     isRequestingPermission,
     errorMessage: userLocationError,
-    isFollowingPosition,
   })
   const selectedRouteVehicles = useMemo(
     () =>
@@ -497,6 +502,20 @@ function PassengerMapContent({ snapshot }: { snapshot: PassengerMapSnapshot }) {
   const attemptedFallbackStyleRef = useRef(false)
   const didFitInitialViewRef = useRef(false)
   const lastFittedViewKeyRef = useRef<string | null>(null)
+  const showPinchHint = mapLoadStatus === 'ready' && shouldShowPinchHint
+
+  useEffect(() => {
+    if (!showPinchHint || typeof window === 'undefined') {
+      return
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setShouldShowPinchHint(false)
+      window.sessionStorage.setItem('cabobus-passenger-pinch-hint', '1')
+    }, 4200)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [showPinchHint])
 
   function focusRoute(routeId: string) {
     const route = routes.find((currentRoute) => currentRoute.id === routeId)
@@ -642,7 +661,6 @@ function PassengerMapContent({ snapshot }: { snapshot: PassengerMapSnapshot }) {
     const resizeMap = () => map.resize()
 
     mapRef.current = map
-      map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-left')
     map.addControl(
       new maplibregl.AttributionControl({
         compact: true,
@@ -934,7 +952,6 @@ function PassengerMapContent({ snapshot }: { snapshot: PassengerMapSnapshot }) {
     <>
       <section className="space-y-3 sm:space-y-4">
         <PassengerMapHeader
-          selectedRouteName={selectedRoute?.name ?? null}
           visibleVehiclesCount={visibleVehiclesCount}
           activeRoutesCount={activeRoutesCount}
           onOpenRoutes={() => setRoutePickerOpen(true)}
@@ -961,27 +978,34 @@ function PassengerMapContent({ snapshot }: { snapshot: PassengerMapSnapshot }) {
                 </div>
               ) : null}
 
-              <div className="pointer-events-none absolute left-3 right-3 top-3 flex items-start justify-between gap-3">
-                <div className="pointer-events-auto max-w-[70%] rounded-full bg-white/92 px-3 py-2 shadow-[0_14px_28px_-24px_rgba(15,23,42,0.6)] backdrop-blur">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-teal-700">
-                    {selectedRoute
-                      ? getTransportTypeLabel(selectedRoute.transportType)
-                      : `Vista de ${getTransportTypeLabel(activeTransportType)}`}
-                  </p>
-                  <p className="truncate text-sm font-semibold text-slate-900">
-                    {selectedRoute
-                      ? selectedRoute.name
-                      : `${activeRoutesCount} rutas con servicio para explorar`}
-                  </p>
+              <div className="pointer-events-none absolute inset-x-3 top-3 z-10 flex justify-center">
+                <div
+                  className={`transition-all duration-500 ${
+                    showPinchHint
+                      ? 'translate-y-0 opacity-100'
+                      : '-translate-y-2 opacity-0'
+                  }`}
+                >
+                  <div className="passenger-pinch-hint rounded-full bg-white/94 px-4 py-2 shadow-[0_14px_28px_-24px_rgba(15,23,42,0.6)] backdrop-blur">
+                    <div className="passenger-pinch-hint__gesture" aria-hidden="true">
+                      <span className="passenger-pinch-hint__finger passenger-pinch-hint__finger--left" />
+                      <span className="passenger-pinch-hint__finger passenger-pinch-hint__finger--right" />
+                    </div>
+                    <span className="text-xs font-semibold text-slate-700">
+                      Pellizca para acercar o alejar
+                    </span>
+                  </div>
                 </div>
+              </div>
 
+              <div className="pointer-events-none absolute right-3 top-3 z-10 flex items-start justify-end">
                 <div className="pointer-events-auto flex flex-col gap-2">
                   <button
                     type="button"
                     onClick={() => setCenterOnUserRequestCount((value) => value + 1)}
                     className="relative flex h-11 w-11 items-center justify-center rounded-xl border border-sky-200 bg-white text-sky-700 shadow-[0_14px_28px_-24px_rgba(15,23,42,0.6)] backdrop-blur transition hover:border-sky-300"
-                    aria-label="Ir a mi ubicacion"
-                    title="Ir a mi ubicacion"
+                    aria-label="Centrar mapa en mi ubicacion"
+                    title="Centrar mapa en mi ubicacion"
                   >
                     <LocationTargetIcon />
                   </button>
@@ -1073,7 +1097,6 @@ function PassengerMapContent({ snapshot }: { snapshot: PassengerMapSnapshot }) {
             locationStatusCopy={locationStatusCopy}
             selectedRoute={selectedRoute}
             selectedRouteVehicles={sortedSelectedRouteVehicles}
-            isFollowingPosition={isFollowingPosition}
             currentTimeMs={currentTimeMs}
             routeDistanceById={routeDistanceById}
             vehicleStatsByRoute={vehicleStatsByRoute}
@@ -1083,10 +1106,6 @@ function PassengerMapContent({ snapshot }: { snapshot: PassengerMapSnapshot }) {
             onRequestPermission={() => {
               void requestPermission()
             }}
-            onStartFollowingPosition={() => {
-              void startFollowingPosition()
-            }}
-            onStopFollowingPosition={stopFollowingPosition}
             onFocusRecommended={() => {
               if (recommendedRoute) {
                 focusRouteAndRevealMap(recommendedRoute.route.id)

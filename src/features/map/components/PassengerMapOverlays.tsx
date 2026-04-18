@@ -1,15 +1,75 @@
-import type { ReactNode } from 'react'
 import { createPortal } from 'react-dom'
+import { useEffect, useState, type ReactNode } from 'react'
 import type { BusRoute, TransportType } from '../../../types/domain'
 import type { PassengerRouteGroup } from './passengerMapViewUtils'
-import {
-  formatDistanceRange,
-  getTransportTypeLabel,
-} from './passengerMapViewUtils'
+import { formatDistanceRange, getTransportTypeLabel } from './passengerMapViewUtils'
+
+function useModalScrollLock() {
+  useEffect(() => {
+    const { body, documentElement } = document
+    const scrollY = window.scrollY
+    const previousBodyOverflow = body.style.overflow
+    const previousBodyPosition = body.style.position
+    const previousBodyTop = body.style.top
+    const previousBodyWidth = body.style.width
+    const previousBodyTouchAction = body.style.touchAction
+    const previousHtmlOverflow = documentElement.style.overflow
+
+    body.style.overflow = 'hidden'
+    body.style.position = 'fixed'
+    body.style.top = `-${scrollY}px`
+    body.style.width = '100%'
+    body.style.touchAction = 'none'
+    documentElement.style.overflow = 'hidden'
+
+    return () => {
+      body.style.overflow = previousBodyOverflow
+      body.style.position = previousBodyPosition
+      body.style.top = previousBodyTop
+      body.style.width = previousBodyWidth
+      body.style.touchAction = previousBodyTouchAction
+      documentElement.style.overflow = previousHtmlOverflow
+      window.scrollTo({ top: scrollY, left: 0, behavior: 'auto' })
+    }
+  }, [])
+}
 
 function ModalPortal({ children }: { children: ReactNode }) {
   if (typeof document === 'undefined') return null
   return createPortal(children, document.body)
+}
+
+function ModalFrame({
+  ariaLabel,
+  onClose,
+  children,
+  className = 'panel w-full max-w-md px-5 py-5',
+}: {
+  ariaLabel: string
+  onClose: () => void
+  children: ReactNode
+  className?: string
+}) {
+  useModalScrollLock()
+
+  return (
+    <ModalPortal>
+      <div
+        className="fixed inset-0 z-[1400] flex items-end justify-center bg-slate-950/35 p-0 backdrop-blur-[2px] sm:p-4 sm:items-center"
+        onClick={onClose}
+      >
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={ariaLabel}
+          className={className}
+          onClick={(event) => event.stopPropagation()}
+        >
+          {children}
+        </div>
+      </div>
+    </ModalPortal>
+  )
 }
 
 export function PassengerMapEmptyState({
@@ -30,41 +90,29 @@ export function PassengerMapEmptyState({
 
 export function PassengerMapInfoModal({ onClose }: { onClose: () => void }) {
   return (
-    <ModalPortal>
-      <div
-        className="fixed inset-0 z-[1400] flex items-end justify-center bg-slate-950/35 p-4 backdrop-blur-[2px] sm:items-center"
-        onClick={onClose}
-      >
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label="Ayuda del mapa"
-          className="panel w-full max-w-md px-5 py-5"
-          onClick={(event) => event.stopPropagation()}
-        >
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="eyebrow">Ayuda</p>
-              <h2 className="mt-2 font-display text-2xl text-slate-900">Como usar el mapa</h2>
-            </div>
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-sm font-semibold text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
-              aria-label="Cerrar ayuda"
-            >
-              X
-            </button>
-          </div>
-
-          <div className="mt-4 space-y-3 text-sm leading-6 text-slate-600">
-            <p>Elige una ruta para limpiar el ruido visual y ver solo sus unidades.</p>
-            <p>Si activas ubicacion, CaboBus puede sugerirte rutas cercanas sin obligarte a seguir el mapa todo el tiempo.</p>
-            <p>La lista lateral tambien funciona como vista rapida para usuarios que prefieren leer rutas y unidades.</p>
-          </div>
+    <ModalFrame ariaLabel="Ayuda del mapa" onClose={onClose}>
+      <div className="mx-auto mb-3 h-1.5 w-14 rounded-full bg-slate-200 sm:hidden" />
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="eyebrow">Ayuda</p>
+          <h2 className="mt-2 font-display text-2xl text-slate-900">Como usar el mapa</h2>
         </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-sm font-semibold text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
+          aria-label="Cerrar ayuda"
+        >
+          X
+        </button>
       </div>
-    </ModalPortal>
+
+      <div className="mt-4 space-y-3 text-sm leading-6 text-slate-600">
+        <p>Abre Rutas si prefieres explorar la lista en lugar del mapa.</p>
+        <p>Usa el boton de ubicacion para centrarte y sugerir rutas cercanas.</p>
+        <p>Pellizca sobre el mapa para acercar o alejar la vista.</p>
+      </div>
+    </ModalFrame>
   )
 }
 
@@ -76,94 +124,108 @@ export function PassengerRouteInfoModal({
   onClose: () => void
 }) {
   const routeDetails = route.passengerInfo
+  const [showLandmarks, setShowLandmarks] = useState(false)
+  const hasSchedule = Boolean(
+    routeDetails.startTime || routeDetails.endTime || routeDetails.frequency,
+  )
+  const hasLandmarks = routeDetails.landmarks.length > 0
 
   return (
-    <ModalPortal>
-      <div
-        className="fixed inset-0 z-[1400] flex items-end justify-center bg-slate-950/35 p-4 backdrop-blur-[2px] sm:items-center"
-        onClick={onClose}
-      >
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label={`Informacion de ${route.name}`}
-          className="panel w-full max-w-md px-5 py-5"
-          onClick={(event) => event.stopPropagation()}
-        >
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="eyebrow">Informacion de ruta</p>
-              <h2 className="mt-2 font-display text-2xl text-slate-900">{route.name}</h2>
-              <p className="mt-2 text-sm text-slate-600">{getTransportTypeLabel(route.transportType)}</p>
-            </div>
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-sm font-semibold text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
-              aria-label="Cerrar informacion de ruta"
-            >
-              X
-            </button>
+    <ModalFrame
+      ariaLabel={`Informacion de ${route.name}`}
+      onClose={onClose}
+      className="panel max-h-[88svh] w-full max-w-lg overflow-hidden rounded-t-[1.8rem] rounded-b-none px-5 py-5 sm:max-h-[82svh] sm:rounded-[1.8rem]"
+    >
+      <div className="mx-auto mb-3 h-1.5 w-14 rounded-full bg-slate-200 sm:hidden" />
+      <div className="flex max-h-[calc(88svh-2rem)] flex-col overflow-hidden sm:max-h-[calc(82svh-2rem)]">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="eyebrow">Ruta</p>
+            <h2 className="mt-2 font-display text-2xl text-slate-900">{route.name}</h2>
+            <p className="mt-2 text-sm text-slate-600">
+              {getTransportTypeLabel(route.transportType)}
+            </p>
           </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-sm font-semibold text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
+            aria-label="Cerrar informacion de ruta"
+          >
+            X
+          </button>
+        </div>
 
-          <div className="mt-4 rounded-[1.2rem] border border-slate-200 bg-slate-50 px-4 py-4">
+        <div className="mt-4 overflow-y-auto overscroll-contain pr-1">
+          <div className="rounded-[1.2rem] border border-slate-200 bg-slate-50 px-4 py-4">
             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-teal-700">
               Trayecto
             </p>
             <p className="mt-2 text-sm leading-6 text-slate-700">{routeDetails.summary}</p>
           </div>
 
-          <div className="mt-4 grid gap-3 sm:grid-cols-3">
-            <div className="rounded-[1.1rem] border border-slate-200 bg-white px-3 py-3">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                Inicio
-              </p>
-              <p className="mt-2 text-sm font-semibold text-slate-900">
-                {routeDetails.startTime ?? 'No disponible'}
-              </p>
+          {hasSchedule ? (
+            <div className="mt-4 grid gap-3 sm:grid-cols-3">
+              {routeDetails.startTime ? (
+                <div className="rounded-[1.1rem] border border-slate-200 bg-white px-3 py-3">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                    Inicio
+                  </p>
+                  <p className="mt-2 text-sm font-semibold text-slate-900">
+                    {routeDetails.startTime}
+                  </p>
+                </div>
+              ) : null}
+              {routeDetails.endTime ? (
+                <div className="rounded-[1.1rem] border border-slate-200 bg-white px-3 py-3">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                    Finaliza
+                  </p>
+                  <p className="mt-2 text-sm font-semibold text-slate-900">
+                    {routeDetails.endTime}
+                  </p>
+                </div>
+              ) : null}
+              {routeDetails.frequency ? (
+                <div className="rounded-[1.1rem] border border-slate-200 bg-white px-3 py-3">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                    Frecuencia
+                  </p>
+                  <p className="mt-2 text-sm font-semibold text-slate-900">
+                    {routeDetails.frequency}
+                  </p>
+                </div>
+              ) : null}
             </div>
-            <div className="rounded-[1.1rem] border border-slate-200 bg-white px-3 py-3">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                Finaliza
-              </p>
-              <p className="mt-2 text-sm font-semibold text-slate-900">
-                {routeDetails.endTime ?? 'No disponible'}
-              </p>
-            </div>
-            <div className="rounded-[1.1rem] border border-slate-200 bg-white px-3 py-3">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                Frecuencia
-              </p>
-              <p className="mt-2 text-sm font-semibold text-slate-900">
-                {routeDetails.frequency ?? 'No disponible'}
-              </p>
-            </div>
-          </div>
+          ) : null}
 
-          <div className="mt-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-teal-700">
-              Colonias y puntos clave
-            </p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {routeDetails.landmarks.length > 0 ? (
-                routeDetails.landmarks.map((stop) => (
-                  <span
-                    key={stop}
-                    className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700"
-                  >
-                    {stop}
-                  </span>
-                ))
-              ) : (
-                <span className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-500">
-                  No hay detalle adicional disponible.
-                </span>
-              )}
+          {hasLandmarks ? (
+            <div className="mt-4">
+              <button
+                type="button"
+                onClick={() => setShowLandmarks((current) => !current)}
+                className="inline-flex min-h-10 items-center justify-center rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:border-teal-300 hover:text-teal-700"
+              >
+                {showLandmarks ? 'Ocultar colonias y puntos' : 'Ver colonias y puntos'}
+              </button>
+
+              {showLandmarks ? (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {routeDetails.landmarks.map((stop) => (
+                    <span
+                      key={stop}
+                      className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700"
+                    >
+                      {stop}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
             </div>
-          </div>
+          ) : null}
         </div>
       </div>
-    </ModalPortal>
+    </ModalFrame>
   )
 }
 
@@ -210,96 +272,91 @@ export function PassengerRoutePickerModal({
     null
 
   return (
-    <ModalPortal>
-      <div
-        className="fixed inset-0 z-[1400] flex items-end justify-center bg-slate-950/35 p-0 backdrop-blur-[2px] sm:p-4"
-        onClick={onClose}
-      >
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label="Seleccionar ruta"
-          className="panel max-h-[88svh] w-full max-w-xl rounded-b-none px-4 py-4 sm:max-h-[80svh] sm:rounded-[1.8rem] sm:px-5 sm:py-5"
-          onClick={(event) => event.stopPropagation()}
-        >
-          <div className="mx-auto mb-3 h-1.5 w-14 rounded-full bg-slate-200 sm:hidden" />
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="eyebrow">Rutas</p>
-              <h2 className="mt-2 font-display text-2xl text-slate-900">
-                Elige el tipo y la ruta
-              </h2>
-              <p className="mt-2 text-sm leading-6 text-slate-600">
-                Esta vista esta pensada para encontrar una ruta rapido incluso sin mirar el mapa.
-              </p>
-            </div>
+    <ModalFrame
+      ariaLabel="Seleccionar ruta"
+      onClose={onClose}
+      className="panel max-h-[92svh] w-full max-w-xl overflow-hidden rounded-t-[1.8rem] rounded-b-none px-4 py-4 sm:max-h-[84svh] sm:rounded-[1.8rem] sm:px-5 sm:py-5"
+    >
+      <div className="mx-auto mb-3 h-1.5 w-14 rounded-full bg-slate-200 sm:hidden" />
+      <div className="flex max-h-[calc(92svh-2rem)] flex-col overflow-hidden sm:max-h-[calc(84svh-2rem)]">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="eyebrow">Rutas</p>
+            <h2 className="mt-2 font-display text-2xl text-slate-900">
+              Elige una ruta
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-slate-600">
+              El fondo ya no se mueve mientras exploras esta lista.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-sm font-semibold text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
+            aria-label="Cerrar selector de ruta"
+          >
+            X
+          </button>
+        </div>
+
+        <div className="mt-4 inline-flex rounded-full bg-slate-100 p-1">
+          {routeGroups.map((group) => (
+            <button
+              key={group.transportType}
+              type="button"
+              onClick={() => onTransportTypeChange(group.transportType)}
+              className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+                group.transportType === activeTransportType
+                  ? 'bg-slate-900 text-white'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              {group.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="mt-4 space-y-2">
+          <label className="block">
+            <span className="sr-only">Buscar ruta</span>
+            <input
+              type="text"
+              value={routeSearchTerm}
+              onChange={(event) => onRouteSearchTermChange(event.target.value)}
+              placeholder="Buscar ruta, colonia o punto clave"
+              className="w-full rounded-[1rem] border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-teal-400"
+            />
+          </label>
+
+          <div className="flex flex-wrap gap-2">
             <button
               type="button"
-              onClick={onClose}
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-sm font-semibold text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
-              aria-label="Cerrar selector de ruta"
+              onClick={onToggleShowOnlyRoutesWithVisibleVehicles}
+              className={`inline-flex min-h-10 items-center justify-center rounded-full px-4 text-sm font-semibold transition ${
+                showOnlyRoutesWithVisibleVehicles
+                  ? 'bg-slate-900 text-white'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+              }`}
             >
-              X
+              {showOnlyRoutesWithVisibleVehicles
+                ? 'Solo rutas con unidades visibles'
+                : 'Mostrar solo rutas con unidades visibles'}
             </button>
-          </div>
 
-          <div className="mt-4 inline-flex rounded-full bg-slate-100 p-1">
-            {routeGroups.map((group) => (
-              <button
-                key={group.transportType}
-                type="button"
-                onClick={() => onTransportTypeChange(group.transportType)}
-                className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
-                  group.transportType === activeTransportType
-                    ? 'bg-slate-900 text-white'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                {group.label}
-              </button>
-            ))}
-          </div>
-
-          <div className="mt-4 space-y-2">
-            <label className="block">
-              <span className="sr-only">Buscar ruta</span>
-              <input
-                type="text"
-                value={routeSearchTerm}
-                onChange={(event) => onRouteSearchTermChange(event.target.value)}
-                placeholder="Buscar ruta, colonia o punto clave"
-                className="w-full rounded-[1rem] border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-teal-400"
-              />
-            </label>
-
-            <div className="flex flex-wrap gap-2">
+            {routeSearchTerm ? (
               <button
                 type="button"
-                onClick={onToggleShowOnlyRoutesWithVisibleVehicles}
-                className={`inline-flex min-h-10 items-center justify-center rounded-full px-4 text-sm font-semibold transition ${
-                  showOnlyRoutesWithVisibleVehicles
-                    ? 'bg-slate-900 text-white'
-                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                }`}
+                onClick={onClearSearch}
+                className="inline-flex min-h-10 items-center justify-center rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:text-slate-900"
               >
-                {showOnlyRoutesWithVisibleVehicles
-                  ? 'Solo rutas con unidades visibles'
-                  : 'Mostrar solo rutas con unidades visibles'}
+                Limpiar busqueda
               </button>
-
-              {routeSearchTerm ? (
-                <button
-                  type="button"
-                  onClick={onClearSearch}
-                  className="inline-flex min-h-10 items-center justify-center rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:text-slate-900"
-                >
-                  Limpiar busqueda
-                </button>
-              ) : null}
-            </div>
+            ) : null}
           </div>
+        </div>
 
-          <div className="mt-4 max-h-[48svh] space-y-3 overflow-y-auto pr-1">
+        <div className="mt-4 overflow-y-auto overscroll-contain pr-1">
+          <div className="space-y-3">
             {activeGroup?.routes.map((route) => {
               const isSelected = route.id === selectedRouteId
               const routeStats = vehicleStatsByRoute.get(route.id) ?? { visible: 0, stopped: 0 }
@@ -347,19 +404,19 @@ export function PassengerRoutePickerModal({
               </div>
             ) : null}
           </div>
+        </div>
 
-          <div className="mt-4 flex items-center justify-between gap-3">
-            <button
-              type="button"
-              onClick={onClearSelection}
-              className="text-sm font-semibold text-slate-600 transition hover:text-slate-900"
-            >
-              Ver mapa general
-            </button>
-            <p className="text-xs text-slate-500">Toca una ruta para enfocarla.</p>
-          </div>
+        <div className="mt-4 flex items-center justify-between gap-3">
+          <button
+            type="button"
+            onClick={onClearSelection}
+            className="text-sm font-semibold text-slate-600 transition hover:text-slate-900"
+          >
+            Ver mapa general
+          </button>
+          <p className="text-xs text-slate-500">Toca una ruta para enfocarla.</p>
         </div>
       </div>
-    </ModalPortal>
+    </ModalFrame>
   )
 }

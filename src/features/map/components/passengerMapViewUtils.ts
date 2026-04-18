@@ -161,12 +161,10 @@ export function getLocationStatusCopy({
   permissionState,
   isRequestingPermission,
   errorMessage,
-  isFollowingPosition,
 }: {
   permissionState: PassengerGeolocationPermissionState
   isRequestingPermission: boolean
   errorMessage: string | null
-  isFollowingPosition: boolean
 }): PassengerLocationStatusCopy {
   if (isRequestingPermission) {
     return {
@@ -177,10 +175,8 @@ export function getLocationStatusCopy({
 
   if (permissionState === 'granted') {
     return {
-      title: isFollowingPosition ? 'Ubicacion en seguimiento' : 'Ubicacion lista',
-      description: isFollowingPosition
-        ? 'El mapa puede seguir tu posicion mientras exploras rutas cercanas.'
-        : 'Tus rutas cercanas se calculan con una lectura reciente de tu posicion.',
+      title: 'Ubicacion lista',
+      description: 'Tus rutas cercanas se calculan con una lectura reciente de tu posicion.',
     }
   }
 

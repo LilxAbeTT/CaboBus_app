@@ -9,7 +9,7 @@ import type { BusRoute, PassengerMapVehicle } from '../types/domain'
 const HOME_ROUTE_REFRESH_INTERVAL_MS = 15_000
 
 const passengerAccess = {
-  title: 'Mapa para pasajeros',
+  title: 'Pasajeros',
   href: '/passenger-map',
   description:
     'Consulta rutas activas y unidades de San Jos\u00e9 del Cabo en tiempo real.',

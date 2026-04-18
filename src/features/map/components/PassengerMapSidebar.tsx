@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { BusRoute, TransportType } from '../../../types/domain'
 import type { PassengerGeolocationPermissionState } from '../hooks/usePassengerGeolocation'
 import type {
@@ -85,7 +86,6 @@ export function PassengerMapSidebar({
   locationStatusCopy,
   selectedRoute,
   selectedRouteVehicles,
-  isFollowingPosition,
   currentTimeMs,
   routeDistanceById,
   vehicleStatsByRoute,
@@ -93,8 +93,6 @@ export function PassengerMapSidebar({
   showOnlyRoutesWithVisibleVehicles,
   canResetView,
   onRequestPermission,
-  onStartFollowingPosition,
-  onStopFollowingPosition,
   onFocusRecommended,
   onFocusVehicle,
   onRouteSearchTermChange,
@@ -115,7 +113,6 @@ export function PassengerMapSidebar({
   locationStatusCopy: PassengerLocationStatusCopy
   selectedRoute: BusRoute | null
   selectedRouteVehicles: PassengerMapVehicleView[]
-  isFollowingPosition: boolean
   currentTimeMs: number
   routeDistanceById: Map<string, number | null>
   vehicleStatsByRoute: Map<string, { visible: number; stopped: number }>
@@ -123,8 +120,6 @@ export function PassengerMapSidebar({
   showOnlyRoutesWithVisibleVehicles: boolean
   canResetView: boolean
   onRequestPermission: () => void
-  onStartFollowingPosition: () => void
-  onStopFollowingPosition: () => void
   onFocusRecommended: () => void
   onFocusVehicle: (vehicleId: string) => void
   onRouteSearchTermChange: (value: string) => void
@@ -143,24 +138,67 @@ export function PassengerMapSidebar({
         ? 'Muy cerca de ti'
         : formatDistanceRange(recommendedRouteDetails.distanceMeters)
       : null
+  const [openSuggestedLandmarksRouteId, setOpenSuggestedLandmarksRouteId] = useState<string | null>(null)
+  const [isHelpOpen, setHelpOpen] = useState(false)
+  const isSuggestedLandmarksOpen =
+    recommendedRouteDetails !== null &&
+    openSuggestedLandmarksRouteId === recommendedRouteDetails.route.id
 
   return (
     <section className="panel overflow-hidden px-3 py-3 sm:px-4">
       <div className="overflow-hidden rounded-[1.4rem] border border-teal-200 bg-[radial-gradient(circle_at_top_left,_rgba(45,212,191,0.18),_transparent_48%),radial-gradient(circle_at_top_right,_rgba(251,191,36,0.16),_transparent_42%),linear-gradient(135deg,_rgba(255,255,255,0.98),_rgba(240,249,255,0.94))] px-4 py-4 shadow-[0_24px_45px_-32px_rgba(15,23,42,0.45)]">
         <div className="flex items-start justify-between gap-3">
-          <div>
+          <div className="min-w-0">
             <span className="inline-flex items-center gap-2 rounded-full border border-teal-200 bg-white/80 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-teal-700 shadow-sm">
               <SparkIcon />
-              {hasTransportTypeFilter ? 'Ruta mas cercana' : 'Ruta sugerida'}
+              {hasTransportTypeFilter ? 'Ruta sugerida' : 'Ruta sugerida'}
             </span>
             <p className="mt-3 font-display text-2xl text-slate-900">
               {hasRecommendedRoute ? recommendedRouteDetails.route.name : locationStatusCopy.title}
             </p>
-            <p className="mt-2 text-sm leading-6 text-slate-600">
-              {hasRecommendedRoute
-                ? recommendedRouteDetails.route.passengerInfo.summary
-                : locationStatusCopy.description}
-            </p>
+            {hasRecommendedRoute ? (
+              <div className="mt-2 space-y-3">
+                {recommendedRouteDetails.route.passengerInfo.frequency ||
+                (recommendedRouteDetails.route.passengerInfo.startTime &&
+                  recommendedRouteDetails.route.passengerInfo.endTime) ? (
+                  <p className="text-sm leading-6 text-slate-600">
+                    {[
+                      recommendedRouteDetails.route.passengerInfo.frequency
+                        ? `Frecuencia aprox: ${recommendedRouteDetails.route.passengerInfo.frequency}.`
+                        : null,
+                      recommendedRouteDetails.route.passengerInfo.startTime &&
+                      recommendedRouteDetails.route.passengerInfo.endTime
+                        ? `Horario estimado: ${recommendedRouteDetails.route.passengerInfo.startTime} a ${recommendedRouteDetails.route.passengerInfo.endTime}.`
+                        : null,
+                    ]
+                      .filter(Boolean)
+                      .join(' ')}
+                  </p>
+                ) : null}
+
+                {recommendedRouteDetails.route.passengerInfo.landmarks.length > 0 ? (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setOpenSuggestedLandmarksRouteId((current) =>
+                        current === recommendedRouteDetails.route.id
+                          ? null
+                          : recommendedRouteDetails.route.id,
+                      )
+                    }
+                    className="inline-flex min-h-10 items-center justify-center rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:border-teal-300 hover:text-teal-700"
+                  >
+                    {isSuggestedLandmarksOpen
+                      ? 'Ocultar colonias y puntos'
+                      : 'Ver colonias y puntos'}
+                  </button>
+                ) : null}
+              </div>
+            ) : (
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                {locationStatusCopy.description}
+              </p>
+            )}
           </div>
           {hasRecommendedRoute ? (
             <span className="rounded-full border border-white/80 bg-white/80 px-3 py-1 text-xs font-semibold text-slate-700 shadow-sm">
@@ -170,19 +208,34 @@ export function PassengerMapSidebar({
         </div>
 
         {hasRecommendedRoute ? (
-          <div className="mt-4 flex items-center gap-3 rounded-[1.1rem] bg-white/80 px-3 py-2.5 shadow-sm">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-teal-50 text-teal-700">
-              <DistanceIcon />
+          <>
+            <div className="mt-4 flex items-center gap-3 rounded-[1.1rem] bg-white/80 px-3 py-2.5 shadow-sm">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-teal-50 text-teal-700">
+                <DistanceIcon />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                  Distancia
+                </p>
+                <p className="truncate text-sm font-semibold text-slate-900">
+                  {recommendedDistanceLabel ?? 'Calculando cercania'}
+                </p>
+              </div>
             </div>
-            <div className="min-w-0">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
-                Distancia
-              </p>
-              <p className="truncate text-sm font-semibold text-slate-900">
-                {recommendedDistanceLabel ?? 'Calculando cercania'}
-              </p>
-            </div>
-          </div>
+            {recommendedRouteDetails.route.passengerInfo.landmarks.length > 0 &&
+            isSuggestedLandmarksOpen ? (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {recommendedRouteDetails.route.passengerInfo.landmarks.map((landmark) => (
+                  <span
+                    key={landmark}
+                    className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700"
+                  >
+                    {landmark}
+                  </span>
+                ))}
+              </div>
+            ) : null}
+          </>
         ) : null}
 
         <div className="mt-4 flex flex-col gap-2">
@@ -204,22 +257,7 @@ export function PassengerMapSidebar({
               className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-900 transition hover:border-teal-300 hover:text-teal-700"
             >
               <LocationIcon />
-              Activar ubicacion
-            </button>
-          ) : null}
-
-          {permissionState === 'granted' ? (
-            <button
-              type="button"
-              onClick={isFollowingPosition ? onStopFollowingPosition : onStartFollowingPosition}
-              className={`inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition ${
-                isFollowingPosition
-                  ? 'border border-sky-200 bg-sky-50 text-sky-800'
-                  : 'border border-slate-200 bg-white text-slate-700 hover:border-sky-300 hover:text-sky-800'
-              }`}
-            >
-              <LocationIcon />
-              {isFollowingPosition ? 'Detener seguimiento' : 'Seguir mi ubicacion'}
+              Usar mi ubicacion
             </button>
           ) : null}
         </div>
@@ -227,15 +265,13 @@ export function PassengerMapSidebar({
 
       {nearbyRoutes.length > 0 ? (
         <section className="mt-4 rounded-[1.3rem] border border-slate-200 bg-slate-50/80 p-3">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
-                Rutas rapidas
-              </p>
-              <p className="mt-1 text-sm text-slate-600">
-                Para encontrar una opcion sin depender del mapa.
-              </p>
-            </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
+              Rutas rapidas
+            </p>
+            <p className="mt-1 text-sm text-slate-600">
+              Para encontrar una opcion sin depender del mapa.
+            </p>
           </div>
           <div className="mt-3 grid gap-2">
             {nearbyRoutes.map((entry) => (
@@ -256,9 +292,7 @@ export function PassengerMapSidebar({
                         {getTransportTypeLabel(entry.route.transportType)}
                       </span>
                     </div>
-                    <p className="mt-2 truncate font-semibold text-slate-900">
-                      {entry.route.name}
-                    </p>
+                    <p className="mt-2 truncate font-semibold text-slate-900">{entry.route.name}</p>
                   </div>
                   <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">
                     {entry.distanceMeters === null
@@ -273,42 +307,6 @@ export function PassengerMapSidebar({
           </div>
         </section>
       ) : null}
-
-      <section className="mt-4 rounded-[1.3rem] border border-slate-200 bg-white px-3 py-3">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
-              Estados de unidad
-            </p>
-            <p className="mt-1 text-sm text-slate-600">
-              Asi se ve la frescura de la senal en el mapa.
-            </p>
-          </div>
-        </div>
-        <div className="mt-3 grid gap-2">
-          <div className="flex items-start gap-3 rounded-[1rem] bg-emerald-50 px-3 py-2.5">
-            <span className="mt-0.5 h-3 w-3 rounded-full bg-emerald-500" />
-            <div>
-              <p className="text-sm font-semibold text-emerald-900">Reciente</p>
-              <p className="text-xs leading-5 text-emerald-800">La unidad sigue enviando senal util.</p>
-            </div>
-          </div>
-          <div className="flex items-start gap-3 rounded-[1rem] bg-amber-50 px-3 py-2.5">
-            <span className="mt-0.5 h-3 w-3 rounded-full bg-amber-500" />
-            <div>
-              <p className="text-sm font-semibold text-amber-900">Desactualizada</p>
-              <p className="text-xs leading-5 text-amber-800">Todavia se muestra, pero la senal ya no es reciente.</p>
-            </div>
-          </div>
-          <div className="flex items-start gap-3 rounded-[1rem] bg-rose-50 px-3 py-2.5">
-            <span className="mt-0.5 h-3 w-3 rounded-full bg-rose-500" />
-            <div>
-              <p className="text-sm font-semibold text-rose-900">Probablemente detenida</p>
-              <p className="text-xs leading-5 text-rose-800">La unidad no desaparece de golpe, pero su operacion parece pausada.</p>
-            </div>
-          </div>
-        </div>
-      </section>
 
       <div className="mt-4 flex items-center justify-between gap-3">
         <div className="inline-flex rounded-full bg-slate-100 p-1">
@@ -380,10 +378,7 @@ export function PassengerMapSidebar({
       <div className="mt-4 max-h-[32rem] space-y-3 overflow-y-auto pr-1">
         {activeRouteGroup?.routes.map((route) => {
           const isSelected = route.id === selectedRoute?.id
-          const routeStats = vehicleStatsByRoute.get(route.id) ?? {
-            visible: 0,
-            stopped: 0,
-          }
+          const routeStats = vehicleStatsByRoute.get(route.id) ?? { visible: 0, stopped: 0 }
           const distanceMeters = routeDistanceById.get(route.id) ?? null
           const distanceLabel =
             distanceMeters === null
@@ -421,7 +416,8 @@ export function PassengerMapSidebar({
                   <InfoIcon />
                 </button>
               </div>
-              <div className="mt-4 space-y-2.5">
+
+              <div className="mt-4 flex flex-wrap gap-2">
                 {distanceLabel ? (
                   <div className={`flex items-center gap-2 rounded-[1rem] px-3 py-2 text-xs font-semibold ${getRouteDistanceTone(distanceMeters)}`}>
                     <DistanceIcon />
@@ -429,23 +425,12 @@ export function PassengerMapSidebar({
                   </div>
                 ) : null}
 
-                <div className="flex flex-wrap gap-2">
-                  <div className="flex items-center gap-2 rounded-[1rem] bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-600">
-                    <BusIcon />
-                    <span>
-                      {routeStats.visible} unidad{routeStats.visible === 1 ? '' : 'es'} visible
-                      {routeStats.visible === 1 ? '' : 's'}
-                    </span>
-                  </div>
-
-                  {routeStats.stopped > 0 ? (
-                    <div className="flex items-center gap-2 rounded-[1rem] bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700">
-                      <LocationIcon />
-                      <span>
-                        {routeStats.stopped} detenida{routeStats.stopped === 1 ? '' : 's'}
-                      </span>
-                    </div>
-                  ) : null}
+                <div className="flex items-center gap-2 rounded-[1rem] bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-600">
+                  <BusIcon />
+                  <span>
+                    {routeStats.visible} unidad{routeStats.visible === 1 ? '' : 'es'} visible
+                    {routeStats.visible === 1 ? '' : 's'}
+                  </span>
                 </div>
               </div>
 
@@ -474,15 +459,13 @@ export function PassengerMapSidebar({
 
       {selectedRoute ? (
         <section className="mt-4 rounded-[1.35rem] border border-slate-200 bg-white px-4 py-4">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
-                Unidades de esta ruta
-              </p>
-              <p className="mt-1 text-sm text-slate-600">
-                Lista rapida para quien prefiere revisar unidades sin depender del mapa.
-              </p>
-            </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
+              Unidades de esta ruta
+            </p>
+            <p className="mt-1 text-sm text-slate-600">
+              Lista rapida para revisar unidades sin depender del mapa.
+            </p>
           </div>
 
           <div className="mt-3 space-y-2">
@@ -522,6 +505,38 @@ export function PassengerMapSidebar({
           </div>
         </section>
       ) : null}
+
+      <section className="mt-4 rounded-[1.25rem] border border-slate-200 bg-slate-50 px-4 py-4">
+        <button
+          type="button"
+          onClick={() => setHelpOpen((current) => !current)}
+          className="inline-flex min-h-10 items-center justify-center rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:border-teal-300 hover:text-teal-700"
+        >
+          {isHelpOpen ? 'Ocultar ayuda' : 'Ayuda'}
+        </button>
+
+        {isHelpOpen ? (
+          <div className="mt-3 space-y-3 text-sm text-slate-600">
+            <p>
+              Usa el boton de ubicacion para centrarte y sugerir rutas cercanas.
+            </p>
+            <div className="flex flex-wrap gap-2 text-xs">
+              <span className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1.5 font-semibold text-emerald-800">
+                <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                Reciente
+              </span>
+              <span className="inline-flex items-center gap-2 rounded-full bg-amber-50 px-3 py-1.5 font-semibold text-amber-800">
+                <span className="h-2 w-2 rounded-full bg-amber-500" />
+                Desactualizada
+              </span>
+              <span className="inline-flex items-center gap-2 rounded-full bg-rose-50 px-3 py-1.5 font-semibold text-rose-800">
+                <span className="h-2 w-2 rounded-full bg-rose-500" />
+                Detenida
+              </span>
+            </div>
+          </div>
+        ) : null}
+      </section>
     </section>
   )
 }

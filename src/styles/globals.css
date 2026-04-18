@@ -148,6 +148,96 @@
   border-top-color: white !important;
 }
 
+.passenger-pinch-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.passenger-pinch-hint__gesture {
+  position: relative;
+  width: 2.4rem;
+  height: 1.6rem;
+  flex-shrink: 0;
+}
+
+.passenger-pinch-hint__gesture::before,
+.passenger-pinch-hint__gesture::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 0.7rem;
+  height: 0.12rem;
+  border-radius: 999px;
+  background: rgba(14, 116, 144, 0.55);
+  transform: translateY(-50%);
+  animation: passenger-pinch-arrow 1.2s ease-in-out infinite;
+}
+
+.passenger-pinch-hint__gesture::before {
+  left: 0.2rem;
+}
+
+.passenger-pinch-hint__gesture::after {
+  right: 0.2rem;
+}
+
+.passenger-pinch-hint__finger {
+  position: absolute;
+  top: 50%;
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #f8fafc 0%, #dbeafe 100%);
+  border: 1px solid rgba(14, 116, 144, 0.35);
+  box-shadow: 0 8px 16px -12px rgba(15, 23, 42, 0.55);
+}
+
+.passenger-pinch-hint__finger--left {
+  left: 0.55rem;
+  animation: passenger-pinch-left 1.2s ease-in-out infinite;
+}
+
+.passenger-pinch-hint__finger--right {
+  right: 0.55rem;
+  animation: passenger-pinch-right 1.2s ease-in-out infinite;
+}
+
+@keyframes passenger-pinch-left {
+  0%,
+  100% {
+    transform: translate(-0.1rem, -50%) scale(0.96);
+  }
+
+  50% {
+    transform: translate(-0.45rem, -50%) scale(1);
+  }
+}
+
+@keyframes passenger-pinch-right {
+  0%,
+  100% {
+    transform: translate(0.1rem, -50%) scale(0.96);
+  }
+
+  50% {
+    transform: translate(0.45rem, -50%) scale(1);
+  }
+}
+
+@keyframes passenger-pinch-arrow {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: translateY(-50%) scaleX(0.82);
+  }
+
+  50% {
+    opacity: 0.72;
+    transform: translateY(-50%) scaleX(1);
+  }
+}
+
 @media (max-width: 640px) {
   .maplibregl-popup {
     max-width: 220px;

@@ -23,12 +23,10 @@ function RouteListIcon() {
 }
 
 export function PassengerMapHeader({
-  selectedRouteName,
   visibleVehiclesCount,
   activeRoutesCount,
   onOpenRoutes,
 }: {
-  selectedRouteName: string | null
   visibleVehiclesCount: number
   activeRoutesCount: number
   onOpenRoutes: () => void
@@ -70,19 +68,13 @@ export function PassengerMapHeader({
 
         <div className="flex flex-wrap items-center gap-2">
           <span className="rounded-full border border-teal-100 bg-teal-50 px-3 py-1.5 text-xs font-semibold text-teal-800">
-            {activeRoutesCount} ruta{activeRoutesCount === 1 ? '' : 's'} con servicio en esta vista
+            {activeRoutesCount} ruta{activeRoutesCount === 1 ? '' : 's'} con servicio
           </span>
           <span className="rounded-full border border-sky-100 bg-sky-50 px-3 py-1.5 text-xs font-semibold text-sky-800">
             {visibleVehiclesCount} unidad{visibleVehiclesCount === 1 ? '' : 'es'} visible
             {visibleVehiclesCount === 1 ? '' : 's'}
-            {' '}en el mapa
+            {' '}
           </span>
-          
-          {selectedRouteName ? (
-            <span className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700">
-              Enfocada: {selectedRouteName}
-            </span>
-          ) : null}
         </div>
       </div>
     </header>
