@@ -1,3 +1,5 @@
+import type { StyleSpecification } from 'maplibre-gl'
+
 export const convexUrl = import.meta.env.VITE_CONVEX_URL
 export const convexSiteUrl = import.meta.env.VITE_CONVEX_SITE_URL
 
@@ -29,6 +31,28 @@ const defaultStadiaStyleUrl = `https://tiles.stadiamaps.com/styles/${stadiaStyle
 export const mapStyleUrl = stadiaMapsApiKey
   ? appendQueryParam(mapStyleUrlOverride ?? defaultStadiaStyleUrl, 'api_key', stadiaMapsApiKey)
   : mapStyleUrlOverride ?? defaultStadiaStyleUrl
+
+export const fallbackMapStyle: StyleSpecification = {
+  version: 8,
+  sources: {
+    'openstreetmap-raster': {
+      type: 'raster',
+      tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+      tileSize: 256,
+      attribution:
+        '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a>',
+    },
+  },
+  layers: [
+    {
+      id: 'openstreetmap-raster',
+      type: 'raster',
+      source: 'openstreetmap-raster',
+      minzoom: 0,
+      maxzoom: 19,
+    },
+  ],
+}
 
 export const mapInitialCenter: [number, number] = [-109.701, 23.058]
 export const mapInitialZoom = 13

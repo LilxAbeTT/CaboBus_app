@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import maplibregl, { type GeoJSONSource } from 'maplibre-gl'
 import {
+  fallbackMapStyle,
   mapAttribution,
   mapInitialCenter,
   mapInitialZoom,
@@ -45,6 +46,7 @@ export function DriverRouteMap({
   const mapContainerRef = useRef<HTMLDivElement | null>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
   const lastFittedRouteIdRef = useRef<string | null>(null)
+  const attemptedFallbackStyleRef = useRef(false)
   const [isMapReady, setMapReady] = useState(false)
 
   const primaryPosition = livePosition ?? lastSharedPosition ?? null
@@ -121,14 +123,25 @@ export function DriverRouteMap({
     const handleLoad = () => {
       setMapReady(true)
     }
+    const handleError = () => {
+      if (attemptedFallbackStyleRef.current) {
+        return
+      }
+
+      attemptedFallbackStyleRef.current = true
+      map.setStyle(fallbackMapStyle)
+    }
 
     map.on('load', handleLoad)
+    map.on('error', handleError)
 
     return () => {
       map.off('load', handleLoad)
+      map.off('error', handleError)
       map.remove()
       mapRef.current = null
       lastFittedRouteIdRef.current = null
+      attemptedFallbackStyleRef.current = false
       setMapReady(false)
     }
   }, [])

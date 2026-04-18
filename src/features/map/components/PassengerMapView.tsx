@@ -19,6 +19,7 @@ import type {
 } from 'geojson'
 import {
   convexUrl,
+  fallbackMapStyle,
   mapAttribution,
   mapInitialCenter,
   mapInitialZoom,
@@ -493,6 +494,7 @@ function PassengerMapContent({ snapshot }: { snapshot: PassengerMapSnapshot }) {
   const mapPanelRef = useRef<HTMLElement | null>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
   const popupRef = useRef<maplibregl.Popup | null>(null)
+  const attemptedFallbackStyleRef = useRef(false)
   const didFitInitialViewRef = useRef(false)
   const lastFittedViewKeyRef = useRef<string | null>(null)
 
@@ -624,8 +626,18 @@ function PassengerMapContent({ snapshot }: { snapshot: PassengerMapSnapshot }) {
       setMapLoadError(null)
     }
     const handleError = () => {
+      if (!attemptedFallbackStyleRef.current) {
+        attemptedFallbackStyleRef.current = true
+        setMapLoadStatus('loading')
+        setMapLoadError(
+          'No fue posible cargar el estilo principal del mapa. Intentando mapa alterno.',
+        )
+        map.setStyle(fallbackMapStyle)
+        return
+      }
+
       setMapLoadStatus('error')
-      setMapLoadError('No fue posible cargar el mapa base configurado.')
+      setMapLoadError('No fue posible cargar el mapa base configurado ni el alterno.')
     }
     const resizeMap = () => map.resize()
 
@@ -650,6 +662,7 @@ function PassengerMapContent({ snapshot }: { snapshot: PassengerMapSnapshot }) {
       map.off('error', handleError)
       map.remove()
       mapRef.current = null
+      attemptedFallbackStyleRef.current = false
       setMapLoadStatus('loading')
     }
   }, [])
