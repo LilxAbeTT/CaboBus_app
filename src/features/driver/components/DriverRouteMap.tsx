@@ -1,13 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   fallbackMapStyle,
-  mapAttribution,
   mapInitialCenter,
   mapInitialZoom,
   mapMaxZoom,
-  mapStyleUrl,
 } from '../../../lib/env'
 import { loadMapLibre } from '../../../lib/maplibreLoader'
+import { getMapRuntimePerformanceProfile } from '../../../lib/runtimePerformance'
 import {
   buildLineStringFeatures,
   buildPointFeatureCollection,
@@ -49,6 +48,7 @@ export function DriverRouteMap({
   const lastFittedRouteIdRef = useRef<string | null>(null)
   const attemptedFallbackStyleRef = useRef(false)
   const [isMapReady, setMapReady] = useState(false)
+  const mapPerformanceProfile = useMemo(() => getMapRuntimePerformanceProfile(), [])
 
   const primaryPosition = livePosition ?? lastSharedPosition ?? null
   const routeBoundsPoints = useMemo(
@@ -103,6 +103,7 @@ export function DriverRouteMap({
     let map: MapLibreMap | null = null
     let handleLoad: (() => void) | null = null
     let handleError: (() => void) | null = null
+    let resizeMap: (() => void) | null = null
 
     void loadMapLibre()
       .then((maplibregl) => {
@@ -112,7 +113,7 @@ export function DriverRouteMap({
 
         map = new maplibregl.Map({
           container: mapContainerRef.current,
-          style: mapStyleUrl,
+          style: mapPerformanceProfile.primaryStyle,
           center: mapInitialCenter,
           zoom: mapInitialZoom,
           maxZoom: mapMaxZoom,
@@ -120,32 +121,50 @@ export function DriverRouteMap({
           dragRotate: false,
           pitchWithRotate: false,
           touchPitch: false,
+          scrollZoom: false,
+          fadeDuration: mapPerformanceProfile.fadeDuration,
+          pixelRatio: mapPerformanceProfile.pixelRatio,
+          maxTileCacheSize: mapPerformanceProfile.maxTileCacheSize,
+          refreshExpiredTiles: mapPerformanceProfile.refreshExpiredTiles,
+          trackResize: mapPerformanceProfile.trackResize,
+          renderWorldCopies: mapPerformanceProfile.renderWorldCopies,
+          canvasContextAttributes: mapPerformanceProfile.canvasContextAttributes,
         })
 
         mapRef.current = map
-        map.addControl(new maplibregl.NavigationControl({ visualizePitch: false }), 'top-left')
+        if (mapPerformanceProfile.showNavigationControl) {
+          map.addControl(new maplibregl.NavigationControl({ visualizePitch: false }), 'top-left')
+        }
         map.addControl(
           new maplibregl.AttributionControl({
             compact: true,
-            customAttribution: mapAttribution,
+            customAttribution: mapPerformanceProfile.attribution,
           }),
           'bottom-right',
         )
 
         handleLoad = () => {
           setMapReady(true)
+          map?.setRenderWorldCopies(false)
         }
         handleError = () => {
-          if (!map || attemptedFallbackStyleRef.current) {
+          if (!map) {
             return
           }
 
-          attemptedFallbackStyleRef.current = true
-          map.setStyle(fallbackMapStyle)
+          if (
+            !attemptedFallbackStyleRef.current &&
+            typeof mapPerformanceProfile.primaryStyle === 'string'
+          ) {
+            attemptedFallbackStyleRef.current = true
+            map.setStyle(fallbackMapStyle)
+          }
         }
 
+        resizeMap = () => map?.resize()
         map.on('load', handleLoad)
         map.on('error', handleError)
+        window.addEventListener('resize', resizeMap)
       })
       .catch(() => {
         if (!cancelled) {
@@ -161,13 +180,27 @@ export function DriverRouteMap({
       if (map && handleError) {
         map.off('error', handleError)
       }
+      if (resizeMap) {
+        window.removeEventListener('resize', resizeMap)
+      }
       map?.remove()
       mapRef.current = null
       lastFittedRouteIdRef.current = null
       attemptedFallbackStyleRef.current = false
       setMapReady(false)
     }
-  }, [])
+  }, [
+    mapPerformanceProfile.attribution,
+    mapPerformanceProfile.canvasContextAttributes,
+    mapPerformanceProfile.fadeDuration,
+    mapPerformanceProfile.maxTileCacheSize,
+    mapPerformanceProfile.pixelRatio,
+    mapPerformanceProfile.primaryStyle,
+    mapPerformanceProfile.refreshExpiredTiles,
+    mapPerformanceProfile.renderWorldCopies,
+    mapPerformanceProfile.showNavigationControl,
+    mapPerformanceProfile.trackResize,
+  ])
 
   useEffect(() => {
     const map = mapRef.current

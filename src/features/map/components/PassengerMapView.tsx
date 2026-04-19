@@ -20,14 +20,13 @@ import type {
 import {
   convexUrl,
   fallbackMapStyle,
-  mapAttribution,
   mapInitialCenter,
   mapInitialZoom,
   mapMaxZoom,
-  mapStyleUrl,
 } from '../../../lib/env'
 import { useCurrentTime } from '../../../hooks/useCurrentTime'
 import { loadMapLibre } from '../../../lib/maplibreLoader'
+import { getMapRuntimePerformanceProfile } from '../../../lib/runtimePerformance'
 import {
   buildCirclePolygon,
   getBoundsFromPoints,
@@ -507,6 +506,7 @@ function PassengerMapContent({ snapshot }: { snapshot: PassengerMapSnapshot }) {
   const attemptedFallbackStyleRef = useRef(false)
   const didFitInitialViewRef = useRef(false)
   const lastFittedViewKeyRef = useRef<string | null>(null)
+  const mapPerformanceProfile = useMemo(() => getMapRuntimePerformanceProfile(), [])
   const showPinchHint = mapLoadStatus === 'ready' && shouldShowPinchHint
   const routeFeatureCollection = useMemo(
     () => buildRouteFeatureCollection(displayedRoutes, selectedRouteKey),
@@ -755,7 +755,7 @@ function PassengerMapContent({ snapshot }: { snapshot: PassengerMapSnapshot }) {
         mapLibreRef.current = maplibregl
         map = new maplibregl.Map({
           container: mapContainerRef.current,
-          style: mapStyleUrl,
+          style: mapPerformanceProfile.primaryStyle,
           center: mapInitialCenter,
           zoom: mapInitialZoom,
           maxZoom: mapMaxZoom,
@@ -764,18 +764,29 @@ function PassengerMapContent({ snapshot }: { snapshot: PassengerMapSnapshot }) {
           pitchWithRotate: false,
           touchPitch: false,
           scrollZoom: false,
+          fadeDuration: mapPerformanceProfile.fadeDuration,
+          pixelRatio: mapPerformanceProfile.pixelRatio,
+          maxTileCacheSize: mapPerformanceProfile.maxTileCacheSize,
+          refreshExpiredTiles: mapPerformanceProfile.refreshExpiredTiles,
+          trackResize: mapPerformanceProfile.trackResize,
+          renderWorldCopies: mapPerformanceProfile.renderWorldCopies,
+          canvasContextAttributes: mapPerformanceProfile.canvasContextAttributes,
         })
 
         handleLoad = () => {
           setMapLoadStatus('ready')
           setMapLoadError(null)
+          map?.setRenderWorldCopies(false)
         }
         handleError = () => {
           if (!map) {
             return
           }
 
-          if (!attemptedFallbackStyleRef.current) {
+          if (
+            !attemptedFallbackStyleRef.current &&
+            typeof mapPerformanceProfile.primaryStyle === 'string'
+          ) {
             attemptedFallbackStyleRef.current = true
             setMapLoadStatus('loading')
             setMapLoadError(
@@ -794,7 +805,7 @@ function PassengerMapContent({ snapshot }: { snapshot: PassengerMapSnapshot }) {
         map.addControl(
           new maplibregl.AttributionControl({
             compact: true,
-            customAttribution: mapAttribution,
+            customAttribution: mapPerformanceProfile.attribution,
           }),
           'bottom-right',
         )
@@ -828,7 +839,17 @@ function PassengerMapContent({ snapshot }: { snapshot: PassengerMapSnapshot }) {
       attemptedFallbackStyleRef.current = false
       setMapLoadStatus('loading')
     }
-  }, [])
+  }, [
+    mapPerformanceProfile.attribution,
+    mapPerformanceProfile.canvasContextAttributes,
+    mapPerformanceProfile.fadeDuration,
+    mapPerformanceProfile.maxTileCacheSize,
+    mapPerformanceProfile.pixelRatio,
+    mapPerformanceProfile.primaryStyle,
+    mapPerformanceProfile.refreshExpiredTiles,
+    mapPerformanceProfile.renderWorldCopies,
+    mapPerformanceProfile.trackResize,
+  ])
 
   useEffect(() => {
     const map = mapRef.current
@@ -1133,11 +1154,11 @@ function PassengerMapContent({ snapshot }: { snapshot: PassengerMapSnapshot }) {
               {mapLoadStatus !== 'ready' ? (
                 <div className="absolute inset-0 z-10 flex items-center justify-center bg-slate-950/5 px-4 text-center">
                   <div className="max-w-sm rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-[0_18px_35px_-28px_rgba(15,23,42,0.6)] backdrop-blur">
-                    <p className="text-sm font-semibold text-slate-900">
-                      Cargando mapa moderno
-                    </p>
+                    <p className="text-sm font-semibold text-slate-900">Cargando mapa</p>
                     <p className="mt-1 text-sm text-slate-600">
-                      MapLibre esta inicializando la capa base y los estilos de Stadia.
+                      {mapPerformanceProfile.prefersLiteMap
+                        ? 'MapLibre esta inicializando la base ligera del mapa para movil.'
+                        : 'MapLibre esta inicializando la capa base y los estilos del mapa.'}
                     </p>
                   </div>
                 </div>

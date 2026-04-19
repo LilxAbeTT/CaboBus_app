@@ -4,13 +4,18 @@ import { usePassengerMapSnapshot } from '../features/map/hooks/usePassengerMapSn
 import { useCurrentTime } from '../hooks/useCurrentTime'
 import { convexUrl } from '../lib/env'
 import { isNativeApp } from '../lib/platform'
-import { preloadPassengerMapAssets } from './pageLoaders'
+import { getMapRuntimePerformanceProfile, prefersLiteMobileUi } from '../lib/runtimePerformance'
+import { preloadPassengerMapAssets, preloadPassengerMapPage } from './pageLoaders'
 import type { BusRoute, PassengerMapVehicle } from '../types/domain'
 
-const HOME_ROUTE_REFRESH_INTERVAL_MS = 15_000
+const HOME_ROUTE_REFRESH_INTERVAL_MS = 30_000
 
 function preloadPassengerMapRoute() {
   preloadPassengerMapAssets()
+}
+
+function preloadPassengerMapRouteOnTouch() {
+  preloadPassengerMapPage()
 }
 
 const passengerAccess = {
@@ -187,12 +192,15 @@ function formatCompactRelativeTime(value: string | null) {
 function scrollToAboutSection() {
   document
     .getElementById('home-about-cabobus')
-    ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    ?.scrollIntoView({
+      behavior: prefersLiteMobileUi() ? 'auto' : 'smooth',
+      block: 'start',
+    })
 }
 
 function HomeRoutesCarouselFallback() {
   return (
-    <div className="rounded-[1.25rem] border border-white/70 bg-white/80 px-3 py-3 shadow-[0_14px_24px_-24px_rgba(15,35,54,0.34)] backdrop-blur">
+    <div className="home-glass rounded-[1.25rem] border border-white/70 bg-white/80 px-3 py-3 shadow-[0_14px_24px_-24px_rgba(15,35,54,0.34)] backdrop-blur">
       <div className="flex items-center justify-between gap-3">
         <p className="text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-teal-700">
           Rutas activas
@@ -201,7 +209,7 @@ function HomeRoutesCarouselFallback() {
           to={passengerAccess.href}
           onMouseEnter={preloadPassengerMapRoute}
           onFocus={preloadPassengerMapRoute}
-          onTouchStart={preloadPassengerMapRoute}
+          onTouchStart={preloadPassengerMapRouteOnTouch}
           className="inline-flex min-h-8 items-center justify-center rounded-full border border-slate-200 bg-white px-3 text-[0.72rem] font-semibold text-slate-700 transition hover:border-teal-300 hover:text-teal-700"
         >
           Abrir mapa
@@ -229,11 +237,17 @@ function buildHomeRouteEntries(routes: BusRoute[], activeVehicles: PassengerMapV
   return routes
     .map((route) => {
       const routeVehicles = groupedVehicles.get(route.id) ?? []
-      const latestVehicleUpdate =
-        routeVehicles
-          .map((vehicle) => vehicle.lastUpdate)
-          .sort((left, right) => new Date(right).getTime() - new Date(left).getTime())[0] ??
-        null
+      let latestVehicleUpdate: string | null = null
+      let latestVehicleTimestamp = 0
+
+      routeVehicles.forEach((vehicle) => {
+        const timestamp = new Date(vehicle.lastUpdate).getTime()
+
+        if (timestamp > latestVehicleTimestamp) {
+          latestVehicleTimestamp = timestamp
+          latestVehicleUpdate = vehicle.lastUpdate
+        }
+      })
 
       return {
         route,
@@ -274,18 +288,18 @@ function HomeRoutesCarousel() {
 
   if (snapshot === undefined) {
     return (
-      <div className="rounded-[1.25rem] border border-white/70 bg-white/80 px-3 py-3 shadow-[0_14px_24px_-24px_rgba(15,35,54,0.34)] backdrop-blur">
+      <div className="home-glass rounded-[1.25rem] border border-white/70 bg-white/80 px-3 py-3 shadow-[0_14px_24px_-24px_rgba(15,35,54,0.34)] backdrop-blur">
         <div className="flex items-center justify-between gap-3">
           <p className="text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-teal-700">
             Rutas activas
           </p>
-          <div className="h-6 w-16 animate-pulse rounded-full bg-slate-200/80" />
+          <div className="mobile-perf-pulse h-6 w-16 animate-pulse rounded-full bg-slate-200/80" />
         </div>
         <div className="mt-2.5 flex gap-2 overflow-hidden">
           {[0, 1, 2].map((item) => (
             <div
               key={item}
-              className="h-16 min-w-[9.5rem] animate-pulse rounded-[1rem] bg-slate-200/75"
+              className="mobile-perf-pulse h-16 min-w-[9.5rem] animate-pulse rounded-[1rem] bg-slate-200/75"
             />
           ))}
         </div>
@@ -294,7 +308,7 @@ function HomeRoutesCarousel() {
   }
 
   return (
-    <section className="rounded-[1.25rem] border border-white/72 bg-white/80 px-3 py-3 shadow-[0_14px_24px_-24px_rgba(15,35,54,0.34)] backdrop-blur">
+    <section className="home-glass rounded-[1.25rem] border border-white/72 bg-white/80 px-3 py-3 shadow-[0_14px_24px_-24px_rgba(15,35,54,0.34)] backdrop-blur">
       <div className="flex items-center justify-between gap-3">
         <p className="text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-teal-700">
           Rutas activas
@@ -311,8 +325,8 @@ function HomeRoutesCarousel() {
             to={`/passenger-map?route=${encodeURIComponent(entry.route.id)}`}
             onMouseEnter={preloadPassengerMapRoute}
             onFocus={preloadPassengerMapRoute}
-            onTouchStart={preloadPassengerMapRoute}
-            className="group min-w-[9.75rem] snap-start rounded-[1rem] border border-slate-200/80 bg-gradient-to-br from-white via-white to-teal-50/70 px-2.5 py-2 text-left shadow-[0_12px_20px_-22px_rgba(15,35,54,0.34)] transition hover:-translate-y-0.5 hover:border-teal-300"
+            onTouchStart={preloadPassengerMapRouteOnTouch}
+            className="home-card group min-w-[9.75rem] snap-start rounded-[1rem] border border-slate-200/80 bg-gradient-to-br from-white via-white to-teal-50/70 px-2.5 py-2 text-left shadow-[0_12px_20px_-22px_rgba(15,35,54,0.34)] transition hover:-translate-y-0.5 hover:border-teal-300"
           >
             <div className="flex items-center justify-between gap-2">
               <span
@@ -360,7 +374,7 @@ function HomeAboutSection() {
   return (
     <section
       id="home-about-cabobus"
-      className="rounded-[2rem] border border-slate-900/10 bg-[linear-gradient(135deg,rgba(14,116,144,0.98),rgba(8,47,73,0.96))] p-5 text-white shadow-[0_28px_52px_-34px_rgba(8,47,73,0.9)] sm:p-6"
+      className="home-about-surface rounded-[2rem] border border-slate-900/10 bg-[linear-gradient(135deg,rgba(14,116,144,0.98),rgba(8,47,73,0.96))] p-5 text-white shadow-[0_28px_52px_-34px_rgba(8,47,73,0.9)] sm:p-6"
     >
       <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
         <div className="max-w-2xl">
@@ -439,9 +453,35 @@ export function HomePage() {
       return
     }
 
+    const performanceProfile = getMapRuntimePerformanceProfile()
+
+    if (!performanceProfile.shouldAutoPreloadHeavyMapAssets) {
+      const idleCallbackId =
+        typeof window.requestIdleCallback === 'function'
+          ? window.requestIdleCallback(() => {
+              preloadPassengerMapPage()
+            }, { timeout: 2500 })
+          : null
+      const timeoutId =
+        idleCallbackId === null
+          ? window.setTimeout(() => {
+              preloadPassengerMapPage()
+            }, 1800)
+          : null
+
+      return () => {
+        if (idleCallbackId !== null) {
+          window.cancelIdleCallback(idleCallbackId)
+        }
+        if (timeoutId !== null) {
+          window.clearTimeout(timeoutId)
+        }
+      }
+    }
+
     const timeoutId = window.setTimeout(() => {
       preloadPassengerMapRoute()
-    }, 450)
+    }, 900)
 
     return () => window.clearTimeout(timeoutId)
   }, [])
@@ -452,11 +492,11 @@ export function HomePage() {
 
   return (
     <section className="mx-auto flex w-full max-w-5xl items-start justify-center">
-      <div className="panel relative w-full overflow-hidden border border-white/82 bg-[linear-gradient(180deg,rgba(255,251,245,0.98),rgba(239,246,255,0.96))]">
+      <div className="home-hero-surface panel relative w-full overflow-hidden border border-white/82 bg-[linear-gradient(180deg,rgba(255,251,245,0.98),rgba(239,246,255,0.96))]">
         <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-teal-500 via-cyan-500 to-amber-400" />
-        <div className="absolute -left-16 top-8 h-44 w-44 rounded-full bg-teal-200/45 blur-3xl" />
-        <div className="absolute -right-12 top-16 h-40 w-40 rounded-full bg-amber-200/50 blur-3xl" />
-        <div className="absolute bottom-0 left-1/2 h-28 w-72 -translate-x-1/2 rounded-full bg-cyan-100/45 blur-3xl" />
+        <div className="home-ornament absolute -left-16 top-8 h-44 w-44 rounded-full bg-teal-200/45 blur-3xl" />
+        <div className="home-ornament absolute -right-12 top-16 h-40 w-40 rounded-full bg-amber-200/50 blur-3xl" />
+        <div className="home-ornament absolute bottom-0 left-1/2 h-28 w-72 -translate-x-1/2 rounded-full bg-cyan-100/45 blur-3xl" />
 
         <div className="relative space-y-3 px-4 py-4 sm:px-6 sm:py-6">
           <div className="rounded-[1.45rem] border border-white/65 bg-slate-950/[0.04] px-3 py-3">
@@ -473,7 +513,7 @@ export function HomePage() {
                 <button
                   type="button"
                   onClick={scrollToAboutSection}
-                  className="inline-flex min-h-8 items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-3 text-[0.72rem] font-semibold text-slate-700 shadow-[0_12px_20px_-24px_rgba(15,23,42,0.45)] transition hover:border-teal-300 hover:text-teal-700"
+                  className="home-soft-shadow inline-flex min-h-8 items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-3 text-[0.72rem] font-semibold text-slate-700 shadow-[0_12px_20px_-24px_rgba(15,23,42,0.45)] transition hover:border-teal-300 hover:text-teal-700"
                 >
                   <InfoIcon />
                   {'Qué es CaboBus'}
@@ -482,14 +522,14 @@ export function HomePage() {
             </div>
 
             <div className="mt-2.5">
-              {HomeConnectedRoutesCarousel()}
+              <HomeConnectedRoutesCarousel />
             </div>
           </div>
 
           <div className="grid gap-3 lg:grid-cols-[minmax(0,1.35fr)_minmax(280px,0.8fr)]">
-            <article className="rounded-[1.8rem] border border-white/90 bg-gradient-to-br from-teal-100 via-cyan-50 to-white p-4 text-left shadow-[0_22px_38px_-30px_rgba(15,35,54,0.34)] sm:p-5">
+            <article className="home-cta-card rounded-[1.8rem] border border-white/90 bg-gradient-to-br from-teal-100 via-cyan-50 to-white p-4 text-left shadow-[0_22px_38px_-30px_rgba(15,35,54,0.34)] sm:p-5">
               <div className="flex items-center gap-3">
-                <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-900 text-white shadow-[0_14px_26px_-20px_rgba(15,23,42,0.7)]">
+                <span className="home-soft-shadow inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-900 text-white shadow-[0_14px_26px_-20px_rgba(15,23,42,0.7)]">
                   <PassengerIcon />
                 </span>
                 <div>
@@ -522,7 +562,7 @@ export function HomePage() {
                 to={passengerAccess.href}
                 onMouseEnter={preloadPassengerMapRoute}
                 onFocus={preloadPassengerMapRoute}
-                onTouchStart={preloadPassengerMapRoute}
+                onTouchStart={preloadPassengerMapRouteOnTouch}
                 className="mt-4 flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-teal-700"
               >
                 {passengerAccess.actionLabel}
@@ -530,7 +570,7 @@ export function HomePage() {
               </Link>
             </article>
 
-            <aside className="rounded-[1.7rem] border border-amber-200/80 bg-[linear-gradient(180deg,rgba(255,251,235,0.98),rgba(255,255,255,0.94))] p-4 shadow-[0_18px_34px_-30px_rgba(148,84,21,0.4)] sm:p-5">
+            <aside className="home-ops-card rounded-[1.7rem] border border-amber-200/80 bg-[linear-gradient(180deg,rgba(255,251,235,0.98),rgba(255,255,255,0.94))] p-4 shadow-[0_18px_34px_-30px_rgba(148,84,21,0.4)] sm:p-5">
               <div className="flex items-center gap-3">
                 <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-100 text-amber-700">
                   <DriverIcon />
