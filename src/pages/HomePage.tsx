@@ -1,12 +1,17 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { Link, Navigate } from 'react-router'
 import { usePassengerMapSnapshot } from '../features/map/hooks/usePassengerMapSnapshot'
 import { useCurrentTime } from '../hooks/useCurrentTime'
 import { convexUrl } from '../lib/env'
 import { isNativeApp } from '../lib/platform'
+import { preloadPassengerMapAssets } from './pageLoaders'
 import type { BusRoute, PassengerMapVehicle } from '../types/domain'
 
 const HOME_ROUTE_REFRESH_INTERVAL_MS = 15_000
+
+function preloadPassengerMapRoute() {
+  preloadPassengerMapAssets()
+}
 
 const passengerAccess = {
   title: 'Pasajeros',
@@ -194,6 +199,9 @@ function HomeRoutesCarouselFallback() {
         </p>
         <Link
           to={passengerAccess.href}
+          onMouseEnter={preloadPassengerMapRoute}
+          onFocus={preloadPassengerMapRoute}
+          onTouchStart={preloadPassengerMapRoute}
           className="inline-flex min-h-8 items-center justify-center rounded-full border border-slate-200 bg-white px-3 text-[0.72rem] font-semibold text-slate-700 transition hover:border-teal-300 hover:text-teal-700"
         >
           Abrir mapa
@@ -301,6 +309,9 @@ function HomeRoutesCarousel() {
           <Link
             key={entry.route.id}
             to={`/passenger-map?route=${encodeURIComponent(entry.route.id)}`}
+            onMouseEnter={preloadPassengerMapRoute}
+            onFocus={preloadPassengerMapRoute}
+            onTouchStart={preloadPassengerMapRoute}
             className="group min-w-[9.75rem] snap-start rounded-[1rem] border border-slate-200/80 bg-gradient-to-br from-white via-white to-teal-50/70 px-2.5 py-2 text-left shadow-[0_12px_20px_-22px_rgba(15,35,54,0.34)] transition hover:-translate-y-0.5 hover:border-teal-300"
           >
             <div className="flex items-center justify-between gap-2">
@@ -356,10 +367,18 @@ function HomeAboutSection() {
           <p className="text-[0.7rem] font-semibold uppercase tracking-[0.3em] text-cyan-100/88">
             {'Qué es CaboBus'}
           </p>
-          <h2 className="mt-3 font-display text-3xl text-white sm:text-[2.15rem]">
-            {'Rutas reales, visibilidad rápida y acceso claro.'}
-          </h2>
-          
+
+          <div className="flex justify-center items-center">
+            <img
+              src="/logo.png"
+              alt="CaboBus"
+              className=" h-42 w-52 shrink-0 object-contain sm:h-14 sm:w-28"
+            />
+          </div>
+
+
+
+
         </div>
 
         <div className="grid gap-2 text-sm sm:grid-cols-3 lg:w-[27rem]">
@@ -415,6 +434,18 @@ function HomeAboutSection() {
 }
 
 export function HomePage() {
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      preloadPassengerMapRoute()
+    }, 450)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [])
+
   if (isNativeApp) {
     return <Navigate to="/driver/login" replace />
   }
@@ -437,7 +468,7 @@ export function HomePage() {
               />
 
               <div className="flex max-w-[14rem] flex-wrap justify-end gap-2">
-                
+
 
                 <button
                   type="button"
@@ -484,11 +515,14 @@ export function HomePage() {
                   <SignalIcon />
                   Unidades activas
                 </span>
-                
+
               </div>
 
               <Link
                 to={passengerAccess.href}
+                onMouseEnter={preloadPassengerMapRoute}
+                onFocus={preloadPassengerMapRoute}
+                onTouchStart={preloadPassengerMapRoute}
                 className="mt-4 flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-teal-700"
               >
                 {passengerAccess.actionLabel}

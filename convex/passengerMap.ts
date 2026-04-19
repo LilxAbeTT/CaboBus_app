@@ -1,6 +1,7 @@
-import { v } from 'convex/values'
+import { ConvexError, v } from 'convex/values'
 import type { Id } from './_generated/dataModel'
-import { query, type DatabaseReader } from './_generated/server'
+import { mutation, query, type DatabaseReader } from './_generated/server'
+import { recordSystemEvent } from './lib/systemEvents'
 import { toRouteSummary } from './lib/routes'
 import { getOperationalStatusForService } from './lib/serviceOperationalState'
 
@@ -107,5 +108,52 @@ export const getActiveVehicles = query({
         }
       })
       .filter(isDefined)
+  },
+})
+
+export const submitRouteReport = mutation({
+  args: {
+    routeId: v.id('routes'),
+    issueType: v.union(
+      v.literal('bus_never_arrived'),
+      v.literal('too_delayed'),
+      v.literal('map_not_matching'),
+      v.literal('unit_problem'),
+      v.literal('other'),
+    ),
+    details: v.optional(v.string()),
+  },
+  handler: async ({ db }, { routeId, issueType, details }) => {
+    const route = await db.get(routeId)
+
+    if (!route) {
+      throw new ConvexError('La ruta seleccionada ya no está disponible.')
+    }
+
+    const trimmedDetails = details?.trim()
+    const issueTypeLabel = {
+      bus_never_arrived: 'La unidad no pasó',
+      too_delayed: 'Va muy retrasada',
+      map_not_matching: 'El mapa no coincide',
+      unit_problem: 'Problema con la unidad',
+      other: 'Otro problema',
+    }[issueType]
+
+    await recordSystemEvent(db, {
+      category: 'route',
+      title: `Reporte de pasajero: ${issueTypeLabel}`,
+      description: trimmedDetails
+        ? `Un pasajero reportó "${issueTypeLabel}" en ${route.name}. Detalle: ${trimmedDetails}`
+        : `Un pasajero reportó "${issueTypeLabel}" en ${route.name}.`,
+      actorName: 'Pasajero',
+      targetType: 'route',
+      targetId: route._id,
+    })
+
+    return {
+      reportedAt: new Date().toISOString(),
+      routeId: route._id,
+      issueType,
+    }
   },
 })

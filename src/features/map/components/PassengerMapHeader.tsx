@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { Link } from 'react-router'
 
 function RouteListIcon() {
@@ -22,7 +23,7 @@ function RouteListIcon() {
   )
 }
 
-export function PassengerMapHeader({
+export const PassengerMapHeader = memo(function PassengerMapHeader({
   visibleVehiclesCount,
   activeRoutesCount,
   onOpenRoutes,
@@ -79,4 +80,4 @@ export function PassengerMapHeader({
       </div>
     </header>
   )
-}
+})

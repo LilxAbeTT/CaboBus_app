@@ -1,5 +1,6 @@
 import { createBrowserRouter, Navigate } from 'react-router'
 import App from './App'
+import { loadPassengerMapPage } from '../pages/pageLoaders'
 
 export const router = createBrowserRouter([
   {
@@ -20,7 +21,7 @@ export const router = createBrowserRouter([
       {
         path: 'passenger-map',
         lazy: async () => {
-          const { PassengerMapPage } = await import('../pages/PassengerMapPage')
+          const { PassengerMapPage } = await loadPassengerMapPage()
           return { Component: PassengerMapPage }
         },
       },

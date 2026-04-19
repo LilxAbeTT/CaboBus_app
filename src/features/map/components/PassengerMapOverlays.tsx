@@ -1,8 +1,19 @@
+import { memo } from 'react'
 import { createPortal } from 'react-dom'
 import { useEffect, useState, type ReactNode } from 'react'
 import type { BusRoute, TransportType } from '../../../types/domain'
 import type { PassengerRouteGroup } from './passengerMapViewUtils'
 import { formatDistanceRange, getTransportTypeLabel } from './passengerMapViewUtils'
+
+const PASSENGER_REPORT_OPTIONS = [
+  { value: 'bus_never_arrived', label: 'No pasó' },
+  { value: 'too_delayed', label: 'Va retrasada' },
+  { value: 'map_not_matching', label: 'Mapa no coincide' },
+  { value: 'unit_problem', label: 'Problema de unidad' },
+  { value: 'other', label: 'Otro' },
+] as const
+
+export type PassengerRouteReportIssueType = (typeof PASSENGER_REPORT_OPTIONS)[number]['value']
 
 function useModalScrollLock() {
   useEffect(() => {
@@ -88,7 +99,11 @@ export function PassengerMapEmptyState({
   )
 }
 
-export function PassengerMapInfoModal({ onClose }: { onClose: () => void }) {
+export const PassengerMapInfoModal = memo(function PassengerMapInfoModal({
+  onClose,
+}: {
+  onClose: () => void
+}) {
   return (
     <ModalFrame ariaLabel="Ayuda del mapa" onClose={onClose}>
       <div className="mx-auto mb-3 h-1.5 w-14 rounded-full bg-slate-200 sm:hidden" />
@@ -114,9 +129,147 @@ export function PassengerMapInfoModal({ onClose }: { onClose: () => void }) {
       </div>
     </ModalFrame>
   )
+})
+
+export function PassengerRouteReportModal({
+  isOpen,
+  routes,
+  selectedRouteId,
+  selectedIssueType,
+  details,
+  isSubmitting,
+  submitError,
+  onClose,
+  onRouteChange,
+  onIssueTypeChange,
+  onDetailsChange,
+  onSubmit,
+}: {
+  isOpen: boolean
+  routes: BusRoute[]
+  selectedRouteId: string
+  selectedIssueType: PassengerRouteReportIssueType
+  details: string
+  isSubmitting: boolean
+  submitError: string | null
+  onClose: () => void
+  onRouteChange: (routeId: string) => void
+  onIssueTypeChange: (issueType: PassengerRouteReportIssueType) => void
+  onDetailsChange: (value: string) => void
+  onSubmit: () => void
+}) {
+  if (!isOpen) {
+    return null
+  }
+
+  return (
+    <ModalFrame
+      ariaLabel="Reportar ruta"
+      onClose={onClose}
+      className="panel max-h-[90svh] w-full max-w-lg overflow-hidden rounded-t-[1.8rem] rounded-b-none px-5 py-5 sm:max-h-[82svh] sm:rounded-[1.8rem]"
+    >
+      <div className="mx-auto mb-3 h-1.5 w-14 rounded-full bg-slate-200 sm:hidden" />
+      <div className="flex max-h-[calc(90svh-2rem)] flex-col overflow-hidden sm:max-h-[calc(82svh-2rem)]">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="eyebrow">Reporte</p>
+            <h2 className="mt-2 font-display text-2xl text-slate-900">Reportar ruta</h2>
+            <p className="mt-2 text-sm leading-6 text-slate-600">
+              Elige la ruta y el problema. El detalle extra es opcional.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-sm font-semibold text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
+            aria-label="Cerrar reporte de ruta"
+          >
+            X
+          </button>
+        </div>
+
+        <div className="mt-4 overflow-y-auto overscroll-contain pr-1">
+          <label className="block">
+            <span className="mb-2 block text-sm font-semibold text-slate-800">Ruta</span>
+            <select
+              value={selectedRouteId}
+              onChange={(event) => onRouteChange(event.target.value)}
+              className="w-full rounded-[1rem] border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-teal-400"
+            >
+              {routes.map((route) => (
+                <option key={route.id} value={route.id}>
+                  {route.name}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <div className="mt-4">
+            <span className="mb-2 block text-sm font-semibold text-slate-800">
+              Tipo de problema
+            </span>
+            <div className="flex flex-wrap gap-2">
+              {PASSENGER_REPORT_OPTIONS.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => onIssueTypeChange(option.value)}
+                  className={`inline-flex min-h-10 items-center justify-center rounded-full px-4 text-sm font-semibold transition ${
+                    selectedIssueType === option.value
+                      ? 'bg-slate-900 text-white'
+                      : 'border border-slate-200 bg-white text-slate-700 hover:border-teal-300 hover:text-teal-700'
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <label className="mt-4 block">
+            <span className="mb-2 block text-sm font-semibold text-slate-800">
+              Detalle opcional
+            </span>
+            <textarea
+              value={details}
+              onChange={(event) => onDetailsChange(event.target.value.slice(0, 180))}
+              rows={3}
+              placeholder="Ejemplo: no pasó por mi parada o el mapa mostraba otra zona."
+              className="w-full resize-none rounded-[1rem] border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-teal-400"
+            />
+            <span className="mt-2 block text-xs text-slate-500">{details.length}/180</span>
+          </label>
+
+          {submitError ? (
+            <div className="mt-4 rounded-[1rem] border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+              {submitError}
+            </div>
+          ) : null}
+        </div>
+
+        <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-end">
+          <button
+            type="button"
+            onClick={onClose}
+            className="inline-flex min-h-11 items-center justify-center rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:text-slate-900"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            onClick={onSubmit}
+            disabled={isSubmitting || routes.length === 0}
+            className="inline-flex min-h-11 items-center justify-center rounded-full bg-slate-900 px-5 text-sm font-semibold text-white transition hover:bg-teal-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+          >
+            {isSubmitting ? 'Enviando...' : 'Enviar reporte'}
+          </button>
+        </div>
+      </div>
+    </ModalFrame>
+  )
 }
 
-export function PassengerRouteInfoModal({
+export const PassengerRouteInfoModal = memo(function PassengerRouteInfoModal({
   route,
   onClose,
 }: {
@@ -227,9 +380,9 @@ export function PassengerRouteInfoModal({
       </div>
     </ModalFrame>
   )
-}
+})
 
-export function PassengerRoutePickerModal({
+export const PassengerRoutePickerModal = memo(function PassengerRoutePickerModal({
   isOpen,
   activeTransportType,
   routeGroups,
@@ -419,4 +572,4 @@ export function PassengerRoutePickerModal({
       </div>
     </ModalFrame>
   )
-}
+})

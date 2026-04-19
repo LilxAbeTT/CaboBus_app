@@ -36,13 +36,15 @@ export interface PassengerQuickRouteEntry {
   stoppedVehicles: number
 }
 
+const lastUpdateFormatter = new Intl.DateTimeFormat('es-MX', {
+  hour: '2-digit',
+  minute: '2-digit',
+  day: '2-digit',
+  month: 'short',
+})
+
 export function formatLastUpdate(value: string) {
-  return new Intl.DateTimeFormat('es-MX', {
-    hour: '2-digit',
-    minute: '2-digit',
-    day: '2-digit',
-    month: 'short',
-  }).format(new Date(value))
+  return lastUpdateFormatter.format(new Date(value))
 }
 
 export function formatRelativeLastUpdate(value: string, nowMs: number) {
@@ -130,8 +132,16 @@ export function getRouteDistanceTone(distanceMeters: number | null) {
   return 'bg-slate-100 text-slate-600'
 }
 
+const routeSearchHaystackCache = new WeakMap<BusRoute, string>()
+
 function getRouteSearchHaystack(route: BusRoute) {
-  return normalizeTextForSearch(
+  const cachedHaystack = routeSearchHaystackCache.get(route)
+
+  if (cachedHaystack) {
+    return cachedHaystack
+  }
+
+  const haystack = normalizeTextForSearch(
     [
       route.name,
       route.direction,
@@ -145,16 +155,21 @@ function getRouteSearchHaystack(route: BusRoute) {
       getTransportTypeLabel(route.transportType),
     ].join(' '),
   )
+
+  routeSearchHaystackCache.set(route, haystack)
+  return haystack
+}
+
+export function normalizeRouteSearchTerm(searchTerm: string) {
+  return normalizeTextForSearch(searchTerm)
 }
 
 export function routeMatchesSearch(route: BusRoute, searchTerm: string) {
-  const normalizedSearch = normalizeTextForSearch(searchTerm)
-
-  if (!normalizedSearch) {
+  if (!searchTerm) {
     return true
   }
 
-  return getRouteSearchHaystack(route).includes(normalizedSearch)
+  return getRouteSearchHaystack(route).includes(searchTerm)
 }
 
 export function getLocationStatusCopy({
@@ -346,7 +361,21 @@ export function getNearbyQuickRouteEntries(
   vehicleStatsByRoute: Map<string, { visible: number; stopped: number }>,
   limit = 4,
 ) {
-  return sortRoutesByUtility(routes, routeDistanceById, vehicleStatsByRoute)
+  return getNearbyQuickRouteEntriesFromSortedRoutes(
+    sortRoutesByUtility(routes, routeDistanceById, vehicleStatsByRoute),
+    routeDistanceById,
+    vehicleStatsByRoute,
+    limit,
+  )
+}
+
+export function getNearbyQuickRouteEntriesFromSortedRoutes(
+  routes: BusRoute[],
+  routeDistanceById: Map<string, number | null>,
+  vehicleStatsByRoute: Map<string, { visible: number; stopped: number }>,
+  limit = 4,
+) {
+  return routes
     .map((route) => {
       const stats = vehicleStatsByRoute.get(route.id) ?? { visible: 0, stopped: 0 }
 
@@ -369,25 +398,49 @@ export function getFeaturedVehicle(
     return null
   }
 
-  return [...vehicles].sort((left, right) => {
-    const leftStatusRank = left.operationalStatus === 'active_recent' ? 0 : 1
-    const rightStatusRank = right.operationalStatus === 'active_recent' ? 0 : 1
+  let featuredVehicle = vehicles[0]
 
-    if (leftStatusRank !== rightStatusRank) {
-      return leftStatusRank - rightStatusRank
+  for (let index = 1; index < vehicles.length; index += 1) {
+    const candidateVehicle = vehicles[index]
+    const featuredStatusRank =
+      featuredVehicle.operationalStatus === 'active_recent' ? 0 : 1
+    const candidateStatusRank =
+      candidateVehicle.operationalStatus === 'active_recent' ? 0 : 1
+
+    if (candidateStatusRank !== featuredStatusRank) {
+      if (candidateStatusRank < featuredStatusRank) {
+        featuredVehicle = candidateVehicle
+      }
+      continue
     }
 
     if (userPosition) {
-      const leftDistance = getDistanceBetweenPointsMeters(userPosition, left.position)
-      const rightDistance = getDistanceBetweenPointsMeters(userPosition, right.position)
+      const featuredDistance = getDistanceBetweenPointsMeters(
+        userPosition,
+        featuredVehicle.position,
+      )
+      const candidateDistance = getDistanceBetweenPointsMeters(
+        userPosition,
+        candidateVehicle.position,
+      )
 
-      if (Math.abs(leftDistance - rightDistance) > 50) {
-        return leftDistance - rightDistance
+      if (Math.abs(candidateDistance - featuredDistance) > 50) {
+        if (candidateDistance < featuredDistance) {
+          featuredVehicle = candidateVehicle
+        }
+        continue
       }
     }
 
-    return new Date(right.lastUpdate).getTime() - new Date(left.lastUpdate).getTime()
-  })[0]
+    if (
+      new Date(candidateVehicle.lastUpdate).getTime() >
+      new Date(featuredVehicle.lastUpdate).getTime()
+    ) {
+      featuredVehicle = candidateVehicle
+    }
+  }
+
+  return featuredVehicle
 }
 
 function getDistanceBetweenPointsMeters(first: Coordinates, second: Coordinates) {

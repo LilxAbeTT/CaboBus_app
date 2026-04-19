@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import type { BusRoute, DriverSupportThread } from '../../../types/domain'
 import {
@@ -260,19 +260,17 @@ export function DriverRouteChangeModal({
 
 export function DriverSupportModal({
   supportThread,
-  draftMessage,
-  onDraftMessageChange,
   onClose,
   onSubmit,
   isSubmitting,
 }: {
   supportThread: DriverSupportThread | null
-  draftMessage: string
-  onDraftMessageChange: (value: string) => void
   onClose: () => void
-  onSubmit: () => void
+  onSubmit: (message: string) => Promise<void>
   isSubmitting: boolean
 }) {
+  const [draftMessage, setDraftMessage] = useState('')
+
   return (
     <ModalPortal>
       <div
@@ -351,7 +349,7 @@ export function DriverSupportModal({
             </span>
             <textarea
               value={draftMessage}
-              onChange={(event) => onDraftMessageChange(event.target.value)}
+              onChange={(event) => setDraftMessage(event.target.value)}
               rows={4}
               placeholder="Ejemplo: se congeló la ubicación, el mapa no actualiza o necesito apoyo con la ruta."
               className="mt-2 w-full rounded-[1.2rem] border border-slate-200 bg-white px-4 py-3 text-sm leading-6 text-slate-900 outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
@@ -368,8 +366,18 @@ export function DriverSupportModal({
             </button>
             <button
               type="button"
-              onClick={onSubmit}
-              disabled={isSubmitting}
+              onClick={() => {
+                const nextMessage = draftMessage.trim()
+
+                if (!nextMessage) {
+                  return
+                }
+
+                void onSubmit(nextMessage).then(() => {
+                  setDraftMessage('')
+                })
+              }}
+              disabled={isSubmitting || !draftMessage.trim()}
               className="min-h-11 rounded-full bg-slate-900 px-5 text-sm font-semibold text-white transition hover:bg-teal-700 disabled:cursor-not-allowed disabled:bg-slate-300"
             >
               {isSubmitting ? 'Enviando...' : 'Enviar a soporte'}

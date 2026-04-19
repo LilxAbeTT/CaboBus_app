@@ -1,13 +1,18 @@
+import { memo } from 'react'
+import { useCurrentTime } from '../../../hooks/useCurrentTime'
+import { formatElapsedSignalTime } from '../../../lib/trackingSignal'
 import type { BusRoute, DriverPanelCurrentService, Vehicle } from '../../../types/domain'
 import { getRouteScheduleLabel, getTransportTypeLabel } from './driverStatusCardUtils'
 
-export function DriverStatusSummary({
+const DRIVER_SIGNAL_REFRESH_INTERVAL_MS = 15_000
+
+export const DriverStatusSummary = memo(function DriverStatusSummary({
   driverName,
   vehicle,
   routeInView,
   currentService,
   sharingStatusLabel,
-  lastSignalLabel,
+  lastSignalAt,
   isLoggingOut,
   isSubmitting,
   isShareRunning,
@@ -25,7 +30,7 @@ export function DriverStatusSummary({
   routeInView: BusRoute | null
   currentService: DriverPanelCurrentService | null
   sharingStatusLabel: string
-  lastSignalLabel: string
+  lastSignalAt?: string | null
   isLoggingOut: boolean
   isSubmitting: boolean
   isShareRunning: boolean
@@ -38,6 +43,9 @@ export function DriverStatusSummary({
   onFinishRoute: () => void
   onRefreshLocation: () => void
 }) {
+  const currentTimeMs = useCurrentTime(DRIVER_SIGNAL_REFRESH_INTERVAL_MS)
+  const lastSignalLabel = formatElapsedSignalTime(lastSignalAt, currentTimeMs)
+
   return (
     <section className="panel overflow-hidden px-4 py-4 sm:px-5 sm:py-5">
       <div className="space-y-4">
@@ -168,4 +176,4 @@ export function DriverStatusSummary({
       </div>
     </section>
   )
-}
+})

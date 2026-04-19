@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import maplibregl, { type GeoJSONSource } from 'maplibre-gl'
 import {
   fallbackMapStyle,
   mapAttribution,
@@ -8,12 +7,14 @@ import {
   mapMaxZoom,
   mapStyleUrl,
 } from '../../../lib/env'
+import { loadMapLibre } from '../../../lib/maplibreLoader'
 import {
   buildLineStringFeatures,
   buildPointFeatureCollection,
   getBoundsFromPoints,
 } from '../../../lib/mapGeometry'
 import type { BusRoute, Coordinates } from '../../../types/domain'
+import type { GeoJSONSource, Map as MapLibreMap } from 'maplibre-gl'
 
 function getRouteBounds(route: BusRoute) {
   return route.segments.flatMap((segment) => segment)
@@ -44,7 +45,7 @@ export function DriverRouteMap({
   lastSharedPosition: Coordinates | null
 }) {
   const mapContainerRef = useRef<HTMLDivElement | null>(null)
-  const mapRef = useRef<maplibregl.Map | null>(null)
+  const mapRef = useRef<MapLibreMap | null>(null)
   const lastFittedRouteIdRef = useRef<string | null>(null)
   const attemptedFallbackStyleRef = useRef(false)
   const [isMapReady, setMapReady] = useState(false)
@@ -98,47 +99,69 @@ export function DriverRouteMap({
       return
     }
 
-    const map = new maplibregl.Map({
-      container: mapContainerRef.current,
-      style: mapStyleUrl,
-      center: mapInitialCenter,
-      zoom: mapInitialZoom,
-      maxZoom: mapMaxZoom,
-      attributionControl: false,
-      dragRotate: false,
-      pitchWithRotate: false,
-      touchPitch: false,
-    })
+    let cancelled = false
+    let map: MapLibreMap | null = null
+    let handleLoad: (() => void) | null = null
+    let handleError: (() => void) | null = null
 
-    mapRef.current = map
-    map.addControl(new maplibregl.NavigationControl({ visualizePitch: false }), 'top-left')
-    map.addControl(
-      new maplibregl.AttributionControl({
-        compact: true,
-        customAttribution: mapAttribution,
-      }),
-      'bottom-right',
-    )
+    void loadMapLibre()
+      .then((maplibregl) => {
+        if (cancelled || mapRef.current || !mapContainerRef.current) {
+          return
+        }
 
-    const handleLoad = () => {
-      setMapReady(true)
-    }
-    const handleError = () => {
-      if (attemptedFallbackStyleRef.current) {
-        return
-      }
+        map = new maplibregl.Map({
+          container: mapContainerRef.current,
+          style: mapStyleUrl,
+          center: mapInitialCenter,
+          zoom: mapInitialZoom,
+          maxZoom: mapMaxZoom,
+          attributionControl: false,
+          dragRotate: false,
+          pitchWithRotate: false,
+          touchPitch: false,
+        })
 
-      attemptedFallbackStyleRef.current = true
-      map.setStyle(fallbackMapStyle)
-    }
+        mapRef.current = map
+        map.addControl(new maplibregl.NavigationControl({ visualizePitch: false }), 'top-left')
+        map.addControl(
+          new maplibregl.AttributionControl({
+            compact: true,
+            customAttribution: mapAttribution,
+          }),
+          'bottom-right',
+        )
 
-    map.on('load', handleLoad)
-    map.on('error', handleError)
+        handleLoad = () => {
+          setMapReady(true)
+        }
+        handleError = () => {
+          if (!map || attemptedFallbackStyleRef.current) {
+            return
+          }
+
+          attemptedFallbackStyleRef.current = true
+          map.setStyle(fallbackMapStyle)
+        }
+
+        map.on('load', handleLoad)
+        map.on('error', handleError)
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setMapReady(false)
+        }
+      })
 
     return () => {
-      map.off('load', handleLoad)
-      map.off('error', handleError)
-      map.remove()
+      cancelled = true
+      if (map && handleLoad) {
+        map.off('load', handleLoad)
+      }
+      if (map && handleError) {
+        map.off('error', handleError)
+      }
+      map?.remove()
       mapRef.current = null
       lastFittedRouteIdRef.current = null
       attemptedFallbackStyleRef.current = false

@@ -1,19 +1,16 @@
-import { useState } from 'react'
+import { memo, useMemo, useState } from 'react'
 import type { BusRoute, TransportType } from '../../../types/domain'
 import type { PassengerGeolocationPermissionState } from '../hooks/usePassengerGeolocation'
+import { PassengerMapSidebarAssistPanel } from './PassengerMapSidebarAssistPanel'
 import type {
   PassengerLocationStatusCopy,
-  PassengerMapVehicleView,
   PassengerQuickRouteEntry,
   PassengerRouteDistanceEntry,
   PassengerRouteGroup,
 } from './passengerMapViewUtils'
 import {
   formatDistanceRange,
-  formatRelativeLastUpdate,
-  getOperationalStatusShortLabel,
   getRouteDistanceTone,
-  getSignalBadgeClass,
   getTransportTypeLabel,
 } from './passengerMapViewUtils'
 
@@ -75,7 +72,7 @@ function BusIcon() {
   )
 }
 
-export function PassengerMapSidebar({
+export const PassengerMapSidebar = memo(function PassengerMapSidebar({
   routeGroups,
   activeTransportType,
   activeRouteGroup,
@@ -85,8 +82,6 @@ export function PassengerMapSidebar({
   permissionState,
   locationStatusCopy,
   selectedRoute,
-  selectedRouteVehicles,
-  currentTimeMs,
   routeDistanceById,
   vehicleStatsByRoute,
   routeSearchTerm,
@@ -94,7 +89,6 @@ export function PassengerMapSidebar({
   canResetView,
   onRequestPermission,
   onFocusRecommended,
-  onFocusVehicle,
   onRouteSearchTermChange,
   onClearSearch,
   onToggleShowOnlyRoutesWithVisibleVehicles,
@@ -112,8 +106,6 @@ export function PassengerMapSidebar({
   permissionState: PassengerGeolocationPermissionState
   locationStatusCopy: PassengerLocationStatusCopy
   selectedRoute: BusRoute | null
-  selectedRouteVehicles: PassengerMapVehicleView[]
-  currentTimeMs: number
   routeDistanceById: Map<string, number | null>
   vehicleStatsByRoute: Map<string, { visible: number; stopped: number }>
   routeSearchTerm: string
@@ -121,7 +113,6 @@ export function PassengerMapSidebar({
   canResetView: boolean
   onRequestPermission: () => void
   onFocusRecommended: () => void
-  onFocusVehicle: (vehicleId: string) => void
   onRouteSearchTermChange: (value: string) => void
   onClearSearch: () => void
   onToggleShowOnlyRoutesWithVisibleVehicles: () => void
@@ -132,6 +123,16 @@ export function PassengerMapSidebar({
 }) {
   const recommendedRouteDetails = permissionState === 'granted' ? recommendedRoute : null
   const hasRecommendedRoute = recommendedRouteDetails !== null
+  const routeOptions = useMemo(
+    () => routeGroups.flatMap((group) => group.routes),
+    [routeGroups],
+  )
+  const defaultReportRouteId =
+    selectedRoute?.id ??
+    recommendedRouteDetails?.route.id ??
+    activeRouteGroup?.routes[0]?.id ??
+    routeOptions[0]?.id ??
+    ''
   const recommendedDistanceLabel =
     recommendedRouteDetails?.distanceMeters !== null && recommendedRouteDetails
       ? recommendedRouteDetails.distanceMeters <= 600
@@ -139,7 +140,7 @@ export function PassengerMapSidebar({
         : formatDistanceRange(recommendedRouteDetails.distanceMeters)
       : null
   const [openSuggestedLandmarksRouteId, setOpenSuggestedLandmarksRouteId] = useState<string | null>(null)
-  const [isHelpOpen, setHelpOpen] = useState(false)
+  const [openRouteLandmarksId, setOpenRouteLandmarksId] = useState<string | null>(null)
   const isSuggestedLandmarksOpen =
     recommendedRouteDetails !== null &&
     openSuggestedLandmarksRouteId === recommendedRouteDetails.route.id
@@ -375,11 +376,13 @@ export function PassengerMapSidebar({
         </div>
       </div>
 
-      <div className="mt-4 max-h-[32rem] space-y-3 overflow-y-auto pr-1">
+      <div className="-mx-3 mt-4 overflow-x-auto px-3 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="flex snap-x snap-mandatory gap-3">
         {activeRouteGroup?.routes.map((route) => {
           const isSelected = route.id === selectedRoute?.id
           const routeStats = vehicleStatsByRoute.get(route.id) ?? { visible: 0, stopped: 0 }
           const distanceMeters = routeDistanceById.get(route.id) ?? null
+          const isRouteLandmarksOpen = openRouteLandmarksId === route.id
           const distanceLabel =
             distanceMeters === null
               ? null
@@ -390,7 +393,7 @@ export function PassengerMapSidebar({
           return (
             <article
               key={route.id}
-              className={`rounded-[1.45rem] border bg-white px-4 py-4 text-left shadow-[0_16px_28px_-24px_rgba(15,23,42,0.45)] transition ${
+              className={`min-w-[17.5rem] max-w-[17.5rem] snap-start rounded-[1.45rem] border bg-white px-4 py-4 text-left shadow-[0_16px_28px_-24px_rgba(15,23,42,0.45)] transition sm:min-w-[18.5rem] sm:max-w-[18.5rem] ${
                 isSelected
                   ? 'border-slate-900 shadow-[0_20px_34px_-24px_rgba(15,23,42,0.62)]'
                   : 'border-slate-200 hover:border-teal-300 hover:shadow-[0_20px_34px_-24px_rgba(15,23,42,0.45)]'
@@ -401,9 +404,6 @@ export function PassengerMapSidebar({
                   <span className="block h-2.5 w-18 rounded-full" style={{ backgroundColor: route.color }} />
                   <span className="mt-3 block font-display text-xl text-slate-900">
                     {route.name}
-                  </span>
-                  <span className="mt-2 line-clamp-2 block text-sm leading-6 text-slate-600">
-                    {route.passengerInfo.summary}
                   </span>
                 </button>
                 <button
@@ -416,6 +416,22 @@ export function PassengerMapSidebar({
                   <InfoIcon />
                 </button>
               </div>
+
+              {route.passengerInfo.frequency ||
+              (route.passengerInfo.startTime && route.passengerInfo.endTime) ? (
+                <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold text-slate-600">
+                  {route.passengerInfo.frequency ? (
+                    <span className="rounded-full bg-slate-100 px-3 py-1.5">
+                      Frecuencia: {route.passengerInfo.frequency}
+                    </span>
+                  ) : null}
+                  {route.passengerInfo.startTime && route.passengerInfo.endTime ? (
+                    <span className="rounded-full bg-slate-100 px-3 py-1.5">
+                      {route.passengerInfo.startTime} a {route.passengerInfo.endTime}
+                    </span>
+                  ) : null}
+                </div>
+              ) : null}
 
               <div className="mt-4 flex flex-wrap gap-2">
                 {distanceLabel ? (
@@ -434,6 +450,33 @@ export function PassengerMapSidebar({
                 </div>
               </div>
 
+              {route.passengerInfo.landmarks.length > 0 ? (
+                <div className="mt-3">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setOpenRouteLandmarksId((current) => (current === route.id ? null : route.id))
+                    }
+                    className="inline-flex min-h-10 items-center justify-center rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:border-teal-300 hover:text-teal-700"
+                  >
+                    {isRouteLandmarksOpen ? 'Ocultar colonias y puntos' : 'Ver colonias y puntos'}
+                  </button>
+
+                  {isRouteLandmarksOpen ? (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {route.passengerInfo.landmarks.map((landmark) => (
+                        <span
+                          key={landmark}
+                          className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700"
+                        >
+                          {landmark}
+                        </span>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+
               <button
                 type="button"
                 onClick={() => onToggleRoute(route.id)}
@@ -451,92 +494,17 @@ export function PassengerMapSidebar({
         })}
 
         {activeRouteGroup && activeRouteGroup.routes.length === 0 ? (
-          <div className="w-full rounded-[1.25rem] border border-dashed border-slate-200 bg-white/80 px-4 py-5 text-sm text-slate-500">
+          <div className="w-full min-w-full rounded-[1.25rem] border border-dashed border-slate-200 bg-white/80 px-4 py-5 text-sm text-slate-500">
             No hay rutas que coincidan con tus filtros actuales.
           </div>
         ) : null}
+        </div>
       </div>
 
-      {selectedRoute ? (
-        <section className="mt-4 rounded-[1.35rem] border border-slate-200 bg-white px-4 py-4">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
-              Unidades de esta ruta
-            </p>
-            <p className="mt-1 text-sm text-slate-600">
-              Lista rapida para revisar unidades sin depender del mapa.
-            </p>
-          </div>
-
-          <div className="mt-3 space-y-2">
-            {selectedRouteVehicles.length > 0 ? (
-              selectedRouteVehicles.map((vehicle) => (
-                <article
-                  key={vehicle.id}
-                  className="rounded-[1.1rem] border border-slate-200 bg-slate-50 px-3 py-3"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="font-semibold text-slate-900">{vehicle.unitNumber}</p>
-                      <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-600">
-                        <span
-                          className={`inline-flex rounded-full px-2.5 py-1 font-semibold ${getSignalBadgeClass(vehicle.operationalStatus)}`}
-                        >
-                          {getOperationalStatusShortLabel(vehicle.operationalStatus)}
-                        </span>
-                        <span>{formatRelativeLastUpdate(vehicle.lastUpdate, currentTimeMs)}</span>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => onFocusVehicle(vehicle.id)}
-                      className="inline-flex min-h-10 items-center justify-center rounded-full bg-slate-900 px-3 text-sm font-semibold text-white transition hover:bg-teal-700"
-                    >
-                      Ver
-                    </button>
-                  </div>
-                </article>
-              ))
-            ) : (
-              <div className="rounded-[1rem] border border-dashed border-slate-200 bg-white px-3 py-4 text-sm text-slate-500">
-                No hay unidades visibles para esta ruta con los filtros actuales.
-              </div>
-            )}
-          </div>
-        </section>
-      ) : null}
-
-      <section className="mt-4 rounded-[1.25rem] border border-slate-200 bg-slate-50 px-4 py-4">
-        <button
-          type="button"
-          onClick={() => setHelpOpen((current) => !current)}
-          className="inline-flex min-h-10 items-center justify-center rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:border-teal-300 hover:text-teal-700"
-        >
-          {isHelpOpen ? 'Ocultar ayuda' : 'Ayuda'}
-        </button>
-
-        {isHelpOpen ? (
-          <div className="mt-3 space-y-3 text-sm text-slate-600">
-            <p>
-              Usa el boton de ubicacion para centrarte y sugerir rutas cercanas.
-            </p>
-            <div className="flex flex-wrap gap-2 text-xs">
-              <span className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1.5 font-semibold text-emerald-800">
-                <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                Reciente
-              </span>
-              <span className="inline-flex items-center gap-2 rounded-full bg-amber-50 px-3 py-1.5 font-semibold text-amber-800">
-                <span className="h-2 w-2 rounded-full bg-amber-500" />
-                Desactualizada
-              </span>
-              <span className="inline-flex items-center gap-2 rounded-full bg-rose-50 px-3 py-1.5 font-semibold text-rose-800">
-                <span className="h-2 w-2 rounded-full bg-rose-500" />
-                Detenida
-              </span>
-            </div>
-          </div>
-        ) : null}
-      </section>
+      <PassengerMapSidebarAssistPanel
+        routeOptions={routeOptions}
+        defaultReportRouteId={defaultReportRouteId}
+      />
     </section>
   )
-}
+})
