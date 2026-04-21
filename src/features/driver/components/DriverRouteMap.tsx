@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   fallbackMapStyle,
   mapInitialCenter,
@@ -33,6 +33,29 @@ function areCoordinatesEqual(
 const DRIVER_ROUTE_SOURCE_ID = 'driver-route'
 const DRIVER_PRIMARY_SOURCE_ID = 'driver-primary-position'
 const DRIVER_SHARED_SOURCE_ID = 'driver-shared-position'
+const DRIVER_AUTO_FOLLOW_RESUME_DELAY_MS = 12000
+const DRIVER_RECENTER_MIN_ZOOM = 15
+
+function LocationTargetIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      className="h-5 w-5"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2v3" />
+      <path d="M12 19v3" />
+      <path d="M2 12h3" />
+      <path d="M19 12h3" />
+    </svg>
+  )
+}
 
 export function DriverRouteMap({
   route,
@@ -47,10 +70,16 @@ export function DriverRouteMap({
   const mapRef = useRef<MapLibreMap | null>(null)
   const lastFittedRouteIdRef = useRef<string | null>(null)
   const attemptedFallbackStyleRef = useRef(false)
+  const isProgrammaticMapMoveRef = useRef(false)
+  const followResumeTimeoutRef = useRef<number | null>(null)
+  const lastFollowedPositionRef = useRef<Coordinates | null>(null)
+  const latestPrimaryPositionRef = useRef<Coordinates | null>(null)
   const [isMapReady, setMapReady] = useState(false)
+  const [isAutoFollowEnabled, setAutoFollowEnabled] = useState(true)
   const mapPerformanceProfile = useMemo(() => getMapRuntimePerformanceProfile(), [])
 
   const primaryPosition = livePosition ?? lastSharedPosition ?? null
+  const isPositionAvailable = Boolean(primaryPosition)
   const routeBoundsPoints = useMemo(
     () => (route ? getRouteBounds(route) : []),
     [route],
@@ -95,6 +124,68 @@ export function DriverRouteMap({
   )
 
   useEffect(() => {
+    latestPrimaryPositionRef.current = primaryPosition
+  }, [primaryPosition])
+
+  const clearFollowResumeTimeout = useCallback(() => {
+    if (
+      followResumeTimeoutRef.current !== null &&
+      typeof window !== 'undefined'
+    ) {
+      window.clearTimeout(followResumeTimeoutRef.current)
+    }
+
+    followResumeTimeoutRef.current = null
+  }, [])
+
+  const runProgrammaticMapMove = useCallback(
+    (runner: (map: MapLibreMap) => void) => {
+      const map = mapRef.current
+
+      if (!map) {
+        return
+      }
+
+      isProgrammaticMapMoveRef.current = true
+      runner(map)
+    },
+    [],
+  )
+
+  const recenterOnDriver = useCallback(
+    ({
+      duration = 700,
+      minimumZoom,
+    }: {
+      duration?: number
+      minimumZoom?: number
+    } = {}) => {
+      const position = latestPrimaryPositionRef.current
+
+      clearFollowResumeTimeout()
+      setAutoFollowEnabled(true)
+
+      if (!position) {
+        return
+      }
+
+      lastFollowedPositionRef.current = position
+      runProgrammaticMapMove((map) => {
+        map.easeTo({
+          center: [position.lng, position.lat],
+          zoom:
+            minimumZoom === undefined
+              ? map.getZoom()
+              : Math.max(map.getZoom(), minimumZoom),
+          duration,
+          essential: true,
+        })
+      })
+    },
+    [clearFollowResumeTimeout, runProgrammaticMapMove],
+  )
+
+  useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) {
       return
     }
@@ -103,6 +194,8 @@ export function DriverRouteMap({
     let map: MapLibreMap | null = null
     let handleLoad: (() => void) | null = null
     let handleError: (() => void) | null = null
+    let handleMoveStart: (() => void) | null = null
+    let handleMoveEnd: (() => void) | null = null
     let resizeMap: (() => void) | null = null
 
     void loadMapLibre()
@@ -133,7 +226,10 @@ export function DriverRouteMap({
 
         mapRef.current = map
         if (mapPerformanceProfile.showNavigationControl) {
-          map.addControl(new maplibregl.NavigationControl({ visualizePitch: false }), 'top-left')
+          map.addControl(
+            new maplibregl.NavigationControl({ visualizePitch: false }),
+            'top-right',
+          )
         }
         map.addControl(
           new maplibregl.AttributionControl({
@@ -146,6 +242,36 @@ export function DriverRouteMap({
         handleLoad = () => {
           setMapReady(true)
           map?.setRenderWorldCopies(false)
+        }
+        handleMoveStart = () => {
+          if (
+            isProgrammaticMapMoveRef.current ||
+            !latestPrimaryPositionRef.current
+          ) {
+            return
+          }
+
+          clearFollowResumeTimeout()
+          setAutoFollowEnabled(false)
+        }
+        handleMoveEnd = () => {
+          const wasProgrammaticMove = isProgrammaticMapMoveRef.current
+
+          isProgrammaticMapMoveRef.current = false
+
+          if (
+            wasProgrammaticMove ||
+            !latestPrimaryPositionRef.current ||
+            typeof window === 'undefined'
+          ) {
+            return
+          }
+
+          clearFollowResumeTimeout()
+          followResumeTimeoutRef.current = window.setTimeout(() => {
+            followResumeTimeoutRef.current = null
+            recenterOnDriver()
+          }, DRIVER_AUTO_FOLLOW_RESUME_DELAY_MS)
         }
         handleError = () => {
           if (!map) {
@@ -163,6 +289,8 @@ export function DriverRouteMap({
 
         resizeMap = () => map?.resize()
         map.on('load', handleLoad)
+        map.on('movestart', handleMoveStart)
+        map.on('moveend', handleMoveEnd)
         map.on('error', handleError)
         window.addEventListener('resize', resizeMap)
       })
@@ -180,6 +308,12 @@ export function DriverRouteMap({
       if (map && handleError) {
         map.off('error', handleError)
       }
+      if (map && handleMoveStart) {
+        map.off('movestart', handleMoveStart)
+      }
+      if (map && handleMoveEnd) {
+        map.off('moveend', handleMoveEnd)
+      }
       if (resizeMap) {
         window.removeEventListener('resize', resizeMap)
       }
@@ -187,9 +321,12 @@ export function DriverRouteMap({
       mapRef.current = null
       lastFittedRouteIdRef.current = null
       attemptedFallbackStyleRef.current = false
+      isProgrammaticMapMoveRef.current = false
+      clearFollowResumeTimeout()
       setMapReady(false)
     }
   }, [
+    clearFollowResumeTimeout,
     mapPerformanceProfile.attribution,
     mapPerformanceProfile.canvasContextAttributes,
     mapPerformanceProfile.fadeDuration,
@@ -200,6 +337,7 @@ export function DriverRouteMap({
     mapPerformanceProfile.renderWorldCopies,
     mapPerformanceProfile.showNavigationControl,
     mapPerformanceProfile.trackResize,
+    recenterOnDriver,
   ])
 
   useEffect(() => {
@@ -333,30 +471,100 @@ export function DriverRouteMap({
     const map = mapRef.current
     const bounds = getBoundsFromPoints(routeBoundsPoints)
 
-    if (!map || !route || !bounds) {
+    if (!map || !route || !bounds || primaryPosition) {
       return
     }
 
     if (lastFittedRouteIdRef.current !== route.id) {
-      map.fitBounds(bounds, {
-        padding: {
-          top: 24,
-          right: 24,
-          bottom: 24,
-          left: 24,
-        },
-        maxZoom: 14.75,
+      runProgrammaticMapMove((activeMap) => {
+        activeMap.fitBounds(bounds, {
+          padding: {
+            top: 24,
+            right: 24,
+            bottom: 24,
+            left: 24,
+          },
+          maxZoom: 14.75,
+        })
       })
       lastFittedRouteIdRef.current = route.id
     }
-  }, [route, routeBoundsPoints])
+  }, [primaryPosition, route, routeBoundsPoints, runProgrammaticMapMove])
+
+  useEffect(() => {
+    if (!isMapReady) {
+      return
+    }
+
+    if (!primaryPosition) {
+      lastFollowedPositionRef.current = null
+      return
+    }
+
+    if (!isAutoFollowEnabled) {
+      return
+    }
+
+    const previousPosition = lastFollowedPositionRef.current
+    const hasPositionChanged =
+      previousPosition?.lat !== primaryPosition.lat ||
+      previousPosition?.lng !== primaryPosition.lng
+
+    if (!hasPositionChanged) {
+      return
+    }
+
+    lastFollowedPositionRef.current = primaryPosition
+    runProgrammaticMapMove((map) => {
+      map.easeTo({
+        center: [primaryPosition.lng, primaryPosition.lat],
+        duration: previousPosition ? 900 : 0,
+        essential: true,
+      })
+    })
+  }, [isAutoFollowEnabled, isMapReady, primaryPosition, runProgrammaticMapMove])
+
+  useEffect(() => {
+    return () => {
+      clearFollowResumeTimeout()
+    }
+  }, [clearFollowResumeTimeout])
+
+  const recenterButtonTitle = !isPositionAvailable
+    ? 'Tu ubicacion aun no esta disponible'
+    : isAutoFollowEnabled
+      ? 'Centrado automatico activo'
+      : 'Volver a centrar y seguir mi ubicacion'
 
   return (
-    <div className="overflow-hidden rounded-[1.6rem] border border-slate-200 bg-white">
+    <div className="relative overflow-hidden rounded-[1.6rem] border border-slate-200 bg-white">
       <div
         ref={mapContainerRef}
         className="h-[33svh] min-h-[260px] w-full sm:h-[40svh] xl:h-[calc(100svh-22rem)] xl:min-h-[360px]"
       />
+      <div className="pointer-events-none absolute left-3 top-3 z-10 flex items-start">
+        <div className="pointer-events-auto">
+          <button
+            type="button"
+            onClick={() =>
+              recenterOnDriver({ duration: 550, minimumZoom: DRIVER_RECENTER_MIN_ZOOM })
+            }
+            disabled={!isPositionAvailable}
+            className={`relative flex h-11 w-11 items-center justify-center rounded-xl border shadow-[0_14px_28px_-24px_rgba(15,23,42,0.6)] backdrop-blur transition ${
+              isPositionAvailable
+                ? isAutoFollowEnabled
+                  ? 'border-sky-200 bg-white text-sky-700 hover:border-sky-300'
+                  : 'border-sky-500 bg-sky-600 text-white hover:bg-sky-700'
+                : 'cursor-not-allowed border-slate-200 bg-white/90 text-slate-300'
+            }`}
+            aria-label={recenterButtonTitle}
+            title={recenterButtonTitle}
+            aria-pressed={isAutoFollowEnabled}
+          >
+            <LocationTargetIcon />
+          </button>
+        </div>
+      </div>
     </div>
   )
 }
