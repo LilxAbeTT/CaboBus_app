@@ -13,9 +13,12 @@ export function AppLayout({ children }: PropsWithChildren) {
   const isPassengerMapPage = location.pathname === '/passenger-map'
   const isDriverFlow = location.pathname.startsWith('/driver')
   const hideShellChrome = isHomePage || isPassengerMapPage || isDriverFlow
+  const shellClassName = isPassengerMapPage
+    ? 'flex min-h-screen w-full flex-col'
+    : 'app-shell'
 
   return (
-    <div className="app-shell">
+    <div className={shellClassName}>
       {!hideShellChrome ? (
         <header className="panel mt-3 overflow-hidden sm:mt-4">
           <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-teal-500 via-cyan-500 to-amber-400" />
@@ -68,7 +71,7 @@ export function AppLayout({ children }: PropsWithChildren) {
           isHomePage
             ? 'flex flex-1 items-center py-3 sm:py-6'
             : isPassengerMapPage
-              ? 'flex-1 py-3 sm:py-4'
+              ? 'flex-1 py-0'
               : isDriverFlow
                 ? 'flex-1 py-3 sm:py-4'
                 : 'flex-1 py-5 sm:py-8'

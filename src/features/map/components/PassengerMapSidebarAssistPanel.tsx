@@ -33,9 +33,9 @@ function AlertIcon() {
 }
 
 const PASSENGER_HELP_STEPS = [
-  'Usa tu ubicacion si quieres que la app te sugiera rutas cercanas.',
+  'Usa tu ubicacion si quieres ordenar rutas cercanas sin perder la vista general.',
   'Desliza el carrusel de rutas y toca "Ver en el mapa" para enfocarla.',
-  'Abre "Ver colonias y puntos" solo cuando necesites revisar el recorrido.',
+  'Activa pantalla completa cuando quieras revisar el recorrido con mas espacio.',
 ]
 
 const PASSENGER_FAQS = [
@@ -52,7 +52,7 @@ const PASSENGER_FAQS = [
   {
     question: 'Que significa ver una ruta en el mapa?',
     answer:
-      'La app enfoca esa ruta, resalta su trazo y muestra solo las unidades relacionadas con ella para que la vista sea mas clara.',
+      'La app enfoca esa ruta, resalta su trazo y despliega colonias y puntos guia para que la lectura sea mas clara.',
   },
   {
     question: 'Donde veo mas informacion de una ruta?',
@@ -62,7 +62,7 @@ const PASSENGER_FAQS = [
   {
     question: 'La app me dice exactamente cuando llega la unidad?',
     answer:
-      'Todavia no. En esta version la app te ayuda a ubicar rutas y unidades activas, pero no calcula un tiempo exacto de llegada.',
+      'No. En esta etapa la vista publica esta enfocada en rutas, referencias visuales y exploracion del mapa, no en seguimiento exacto de unidades.',
   },
 ]
 
@@ -195,24 +195,24 @@ export const PassengerMapSidebarAssistPanel = memo(function PassengerMapSidebarA
 
             <div className="rounded-[1.1rem] border border-white bg-white px-4 py-4 shadow-sm">
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
-                Estado de unidades
+                Puntos del mapa
               </p>
               <div className="mt-3 flex flex-wrap gap-2 text-xs">
-                <span className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1.5 font-semibold text-emerald-800">
-                  <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                  Reciente
+                <span className="inline-flex items-center gap-2 rounded-full bg-rose-50 px-3 py-1.5 font-semibold text-rose-800">
+                  <span className="h-2 w-2 rounded-full bg-rose-500" />
+                  Colonia
                 </span>
                 <span className="inline-flex items-center gap-2 rounded-full bg-amber-50 px-3 py-1.5 font-semibold text-amber-800">
                   <span className="h-2 w-2 rounded-full bg-amber-500" />
-                  Desactualizada
+                  Punto guia
                 </span>
-                <span className="inline-flex items-center gap-2 rounded-full bg-rose-50 px-3 py-1.5 font-semibold text-rose-800">
-                  <span className="h-2 w-2 rounded-full bg-rose-500" />
-                  Detenida
+                <span className="inline-flex items-center gap-2 rounded-full bg-sky-50 px-3 py-1.5 font-semibold text-sky-800">
+                  <span className="h-2 w-2 rounded-full bg-sky-500" />
+                  Parada oficial
                 </span>
               </div>
               <p className="mt-3 leading-6 text-slate-600">
-                Estos estados te ayudan a entender si la unidad trae una senal reciente, una senal vieja o si probablemente ya se detuvo.
+                Las colonias se anclan sobre la geometria real de la ruta para ubicar mejor el recorrido. Los puntos guia siguen siendo aproximados y las paradas oficiales se muestran aparte cuando ya existen en la base.
               </p>
             </div>
 

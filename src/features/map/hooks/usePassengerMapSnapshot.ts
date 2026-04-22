@@ -26,7 +26,8 @@ export function usePassengerMapSnapshot(nowMs?: number) {
   const storeSnapshot = useEffectEvent((nextSnapshot: PassengerMapSnapshot) => {
     setLastSnapshot((current) =>
       current?.routes === nextSnapshot.routes &&
-      current?.activeVehicles === nextSnapshot.activeVehicles
+      current?.activeVehicles === nextSnapshot.activeVehicles &&
+      current?.stops === nextSnapshot.stops
         ? current
         : nextSnapshot,
     )

@@ -134,8 +134,10 @@ export const PassengerMapInfoModal = memo(function PassengerMapInfoModal({
       </div>
 
       <div className="mt-4 space-y-3 text-sm leading-6 text-slate-600">
-        <p>Abre Rutas si prefieres explorar la lista en lugar del mapa.</p>
-        <p>Usa el boton de ubicacion para centrarte y sugerir rutas cercanas.</p>
+        <p>Abre Rutas si prefieres explorar por lista antes de tocar el mapa.</p>
+        <p>Usa el boton de ubicacion para centrarte y ordenar rutas cercanas.</p>
+        <p>Activa pantalla completa cuando quieras ver el mapa sin paneles alrededor.</p>
+        <p>Los pines rosas marcan colonias del recorrido; los amarillos son guias aproximadas y los azules son paradas oficiales.</p>
         <p>Pellizca sobre el mapa para acercar o alejar la vista.</p>
       </div>
     </ModalFrame>
@@ -657,12 +659,15 @@ export const PassengerRouteInfoModal = memo(function PassengerRouteInfoModal({
 
 export const PassengerRoutePickerModal = memo(function PassengerRoutePickerModal({
   isOpen,
+  isRealtimeEnabled,
   activeTransportType,
   routeGroups,
   selectedRouteId,
   routeSearchTerm,
   routeDistanceById,
   vehicleStatsByRoute,
+  referencePointCountByRoute,
+  colonyPointCountByRoute,
   showOnlyRoutesWithVisibleVehicles,
   onClose,
   onRouteSearchTermChange,
@@ -673,12 +678,15 @@ export const PassengerRoutePickerModal = memo(function PassengerRoutePickerModal
   onClearSearch,
 }: {
   isOpen: boolean
+  isRealtimeEnabled: boolean
   activeTransportType: TransportType
   routeGroups: PassengerRouteGroup[]
   selectedRouteId: string | null
   routeSearchTerm: string
   routeDistanceById: Map<string, number | null>
   vehicleStatsByRoute: Map<string, { visible: number; stopped: number }>
+  referencePointCountByRoute: Map<string, number>
+  colonyPointCountByRoute: Map<string, number>
   showOnlyRoutesWithVisibleVehicles: boolean
   onClose: () => void
   onRouteSearchTermChange: (value: string) => void
@@ -755,19 +763,21 @@ export const PassengerRoutePickerModal = memo(function PassengerRoutePickerModal
           </label>
 
           <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={onToggleShowOnlyRoutesWithVisibleVehicles}
-              className={`inline-flex min-h-10 items-center justify-center rounded-full px-4 text-sm font-semibold transition ${
-                showOnlyRoutesWithVisibleVehicles
-                  ? 'bg-slate-900 text-white'
-                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-              }`}
-            >
-              {showOnlyRoutesWithVisibleVehicles
-                ? 'Solo rutas con unidades visibles'
-                : 'Mostrar solo rutas con unidades visibles'}
-            </button>
+            {isRealtimeEnabled ? (
+              <button
+                type="button"
+                onClick={onToggleShowOnlyRoutesWithVisibleVehicles}
+                className={`inline-flex min-h-10 items-center justify-center rounded-full px-4 text-sm font-semibold transition ${
+                  showOnlyRoutesWithVisibleVehicles
+                    ? 'bg-slate-900 text-white'
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                }`}
+              >
+                {showOnlyRoutesWithVisibleVehicles
+                  ? 'Solo rutas con unidades visibles'
+                  : 'Mostrar solo rutas con unidades visibles'}
+              </button>
+            ) : null}
 
             {routeSearchTerm ? (
               <button
@@ -786,6 +796,8 @@ export const PassengerRoutePickerModal = memo(function PassengerRoutePickerModal
             {activeGroup?.routes.map((route) => {
               const isSelected = route.id === selectedRouteId
               const routeStats = vehicleStatsByRoute.get(route.id) ?? { visible: 0, stopped: 0 }
+              const routeReferencePointCount = referencePointCountByRoute.get(route.id) ?? 0
+              const routeColonyPointCount = colonyPointCountByRoute.get(route.id) ?? 0
               const distanceMeters = routeDistanceById.get(route.id) ?? null
 
               return (
@@ -814,7 +826,11 @@ export const PassengerRoutePickerModal = memo(function PassengerRoutePickerModal
                     </div>
                     <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">
                       {distanceMeters === null
-                        ? `${routeStats.visible} activas`
+                        ? isRealtimeEnabled
+                          ? `${routeStats.visible} activas`
+                          : routeColonyPointCount > 0
+                            ? `${routeColonyPointCount} colonia${routeColonyPointCount === 1 ? '' : 's'}`
+                            : `${routeReferencePointCount} punto${routeReferencePointCount === 1 ? '' : 's'}`
                         : distanceMeters <= 600
                           ? 'Cerca'
                           : formatDistanceRange(distanceMeters)}

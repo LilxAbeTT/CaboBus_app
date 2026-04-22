@@ -25,14 +25,16 @@ function RouteListIcon() {
 }
 
 export const PassengerMapHeader = memo(function PassengerMapHeader({
-  visibleVehiclesCount,
-  activeRoutesCount,
+  routeCount,
+  referencePointCount,
+  isRouteFocused,
   personalRoutes,
   onOpenRoutes,
   onOpenPersonalRoute,
 }: {
-  visibleVehiclesCount: number
-  activeRoutesCount: number
+  routeCount: number
+  referencePointCount: number
+  isRouteFocused: boolean
   personalRoutes: BusRoute[]
   onOpenRoutes: () => void
   onOpenPersonalRoute: (routeId: string) => void
@@ -74,12 +76,15 @@ export const PassengerMapHeader = memo(function PassengerMapHeader({
 
         <div className="flex flex-wrap items-center gap-2">
           <span className="rounded-full border border-teal-100 bg-teal-50 px-3 py-1.5 text-xs font-semibold text-teal-800">
-            {activeRoutesCount} ruta{activeRoutesCount === 1 ? '' : 's'} con servicio
+            {isRouteFocused
+              ? 'Ruta enfocada'
+              : `${routeCount} ruta${routeCount === 1 ? '' : 's'} visible${routeCount === 1 ? '' : 's'}`}
           </span>
           <span className="rounded-full border border-sky-100 bg-sky-50 px-3 py-1.5 text-xs font-semibold text-sky-800">
-            {visibleVehiclesCount} unidad{visibleVehiclesCount === 1 ? '' : 'es'} visible
-            {visibleVehiclesCount === 1 ? '' : 's'}
-            {' '}
+            {referencePointCount} punto{referencePointCount === 1 ? '' : 's'} guia
+          </span>
+          <span className="rounded-full border border-amber-100 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-800">
+            Modo exploracion
           </span>
         </div>
 

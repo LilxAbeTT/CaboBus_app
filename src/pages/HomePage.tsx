@@ -1,14 +1,11 @@
 import { useEffect, useMemo } from 'react'
 import { Link, Navigate } from 'react-router'
 import { usePassengerMapSnapshot } from '../features/map/hooks/usePassengerMapSnapshot'
-import { useCurrentTime } from '../hooks/useCurrentTime'
 import { convexUrl } from '../lib/env'
 import { isNativeApp } from '../lib/platform'
 import { getMapRuntimePerformanceProfile, prefersLiteMobileUi } from '../lib/runtimePerformance'
 import { preloadPassengerMapAssets, preloadPassengerMapPage } from './pageLoaders'
-import type { BusRoute, PassengerMapVehicle } from '../types/domain'
-
-const HOME_ROUTE_REFRESH_INTERVAL_MS = 30_000
+import type { BusRoute } from '../types/domain'
 
 function preloadPassengerMapRoute() {
   preloadPassengerMapAssets()
@@ -22,7 +19,7 @@ const passengerAccess = {
   title: 'Pasajeros',
   href: '/passenger-map',
   description:
-    'Consulta rutas activas y unidades de San Jos\u00e9 del Cabo en tiempo real.',
+    'Explora rutas reales, puntos guia y zonas clave de San Jose del Cabo desde el mapa.',
   actionLabel: 'Ver mapa',
 }
 
@@ -203,7 +200,7 @@ function HomeRoutesCarouselFallback() {
     <div className="home-glass rounded-[1.25rem] border border-white/70 bg-white/80 px-3 py-3 shadow-[0_14px_24px_-24px_rgba(15,35,54,0.34)] backdrop-blur">
       <div className="flex items-center justify-between gap-3">
         <p className="text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-teal-700">
-          Rutas activas
+          Rutas disponibles
         </p>
         <Link
           to={passengerAccess.href}
@@ -221,68 +218,31 @@ function HomeRoutesCarouselFallback() {
 
 type HomeRouteEntry = {
   route: BusRoute
-  visibleVehicleCount: number
-  latestVehicleUpdate: string | null
+  referencePointCount: number
 }
 
-function buildHomeRouteEntries(routes: BusRoute[], activeVehicles: PassengerMapVehicle[]) {
-  const groupedVehicles = new Map<string, PassengerMapVehicle[]>()
-
-  activeVehicles.forEach((vehicle) => {
-    const current = groupedVehicles.get(vehicle.routeId) ?? []
-    current.push(vehicle)
-    groupedVehicles.set(vehicle.routeId, current)
-  })
-
+function buildHomeRouteEntries(routes: BusRoute[]) {
   return routes
     .map((route) => {
-      const routeVehicles = groupedVehicles.get(route.id) ?? []
-      let latestVehicleUpdate: string | null = null
-      let latestVehicleTimestamp = 0
-
-      routeVehicles.forEach((vehicle) => {
-        const timestamp = new Date(vehicle.lastUpdate).getTime()
-
-        if (timestamp > latestVehicleTimestamp) {
-          latestVehicleTimestamp = timestamp
-          latestVehicleUpdate = vehicle.lastUpdate
-        }
-      })
-
       return {
         route,
-        visibleVehicleCount: routeVehicles.length,
-        latestVehicleUpdate,
+        referencePointCount: route.passengerInfo.landmarks.length,
       } satisfies HomeRouteEntry
     })
     .sort((left, right) => {
-      if (right.visibleVehicleCount !== left.visibleVehicleCount) {
-        return right.visibleVehicleCount - left.visibleVehicleCount
+      if (right.referencePointCount !== left.referencePointCount) {
+        return right.referencePointCount - left.referencePointCount
       }
-
-      if (left.latestVehicleUpdate && right.latestVehicleUpdate) {
-        return (
-          new Date(right.latestVehicleUpdate).getTime() -
-          new Date(left.latestVehicleUpdate).getTime()
-        )
-      }
-
-      if (left.latestVehicleUpdate) return -1
-      if (right.latestVehicleUpdate) return 1
 
       return left.route.name.localeCompare(right.route.name, 'es')
     })
 }
 
 function HomeRoutesCarousel() {
-  const currentTimeMs = useCurrentTime(HOME_ROUTE_REFRESH_INTERVAL_MS)
-  const snapshot = usePassengerMapSnapshot(currentTimeMs)
+  const snapshot = usePassengerMapSnapshot()
 
   const routeEntries = useMemo(
-    () =>
-      snapshot
-        ? buildHomeRouteEntries(snapshot.routes, snapshot.activeVehicles).slice(0, 12)
-        : [],
+    () => (snapshot ? buildHomeRouteEntries(snapshot.routes).slice(0, 12) : []),
     [snapshot],
   )
 
@@ -291,7 +251,7 @@ function HomeRoutesCarousel() {
       <div className="home-glass rounded-[1.25rem] border border-white/70 bg-white/80 px-3 py-3 shadow-[0_14px_24px_-24px_rgba(15,35,54,0.34)] backdrop-blur">
         <div className="flex items-center justify-between gap-3">
           <p className="text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-teal-700">
-            Rutas activas
+            Rutas disponibles
           </p>
           <div className="mobile-perf-pulse h-6 w-16 animate-pulse rounded-full bg-slate-200/80" />
         </div>
@@ -311,10 +271,10 @@ function HomeRoutesCarousel() {
     <section className="home-glass rounded-[1.25rem] border border-white/72 bg-white/80 px-3 py-3 shadow-[0_14px_24px_-24px_rgba(15,35,54,0.34)] backdrop-blur">
       <div className="flex items-center justify-between gap-3">
         <p className="text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-teal-700">
-          Rutas activas
+          Rutas disponibles
         </p>
         <span className="rounded-full bg-slate-900 px-2.5 py-1 text-[0.64rem] font-semibold text-white">
-          {snapshot.activeVehicles.length} unidades
+          {snapshot.routes.length} trayectos
         </span>
       </div>
 
@@ -336,13 +296,14 @@ function HomeRoutesCarousel() {
                   color: entry.route.color,
                 }}
               >
+                <RouteIcon />
               </span>
               <span className="rounded-full bg-slate-900 px-2 py-1 text-[0.6rem] font-semibold uppercase tracking-[0.12em] text-white">
                 {getTransportTypeLabel(entry.route.transportType)}
               </span>
               <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-1 font-semibold text-slate-700">
-                <BusIcon />
-                {entry.visibleVehicleCount}
+                <RouteIcon />
+                {entry.referencePointCount}
               </span>
             </div>
 
@@ -350,10 +311,10 @@ function HomeRoutesCarousel() {
               {entry.route.name}
             </p>
 
-            <div className="mt-1.5 flex items-center gap-1 text-[0.68rem] font-semibold text-slate-500">
-              <SignalIcon />
-              {formatCompactRelativeTime(entry.latestVehicleUpdate)}
-            </div>
+            <p className="mt-1.5 line-clamp-2 text-[0.68rem] font-semibold leading-5 text-slate-500">
+              {entry.route.passengerInfo.landmarks.slice(0, 3).join(' · ') ||
+                `Disponible ${formatCompactRelativeTime(new Date().toISOString())}`}
+            </p>
 
           </Link>
         ))}
@@ -407,8 +368,8 @@ function HomeAboutSection() {
             <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-white/12 text-cyan-100">
               <SignalIcon />
             </span>
-            <p className="mt-3 font-semibold text-white">{'Señal en vivo'}</p>
-            <p className="mt-1 text-cyan-50/80">Rutas y unidades activas visibles.</p>
+            <p className="mt-3 font-semibold text-white">Puntos guia</p>
+            <p className="mt-1 text-cyan-50/80">Referencias visuales para leer mejor el mapa.</p>
           </div>
           <div className="rounded-[1.35rem] border border-white/14 bg-white/10 p-3.5">
             <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-white/12 text-cyan-100">
@@ -432,15 +393,15 @@ function HomeAboutSection() {
           <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-100/88">
             2
           </p>
-          <p className="mt-2 font-semibold text-white">Ubica la unidad</p>
-          <p className="mt-1 text-sm text-cyan-50/78">{'Ve proximidad y última señal.'}</p>
+          <p className="mt-2 font-semibold text-white">Ubica colonias y puntos</p>
+          <p className="mt-1 text-sm text-cyan-50/78">Apoyate en referencias visuales del recorrido.</p>
         </div>
         <div className="rounded-[1.35rem] border border-white/12 bg-white/8 p-4">
           <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-100/88">
             3
           </p>
-          <p className="mt-2 font-semibold text-white">Sigue el servicio</p>
-          <p className="mt-1 text-sm text-cyan-50/78">{'Sin menús pesados ni pasos extra.'}</p>
+          <p className="mt-2 font-semibold text-white">Abre el mapa completo</p>
+          <p className="mt-1 text-sm text-cyan-50/78">Amplia la vista para leer mejor la ciudad.</p>
         </div>
       </div>
     </section>
@@ -553,7 +514,7 @@ export function HomePage() {
                 </span>
                 <span className="inline-flex items-center gap-2 rounded-full bg-white/88 px-2.5 py-1.5 text-[0.68rem] font-semibold text-slate-700">
                   <SignalIcon />
-                  Unidades activas
+                  Puntos guia
                 </span>
 
               </div>
