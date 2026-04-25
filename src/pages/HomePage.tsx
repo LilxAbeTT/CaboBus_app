@@ -5,7 +5,7 @@ import { convexUrl } from '../lib/env'
 import { isNativeApp } from '../lib/platform'
 import { getMapRuntimePerformanceProfile, prefersLiteMobileUi } from '../lib/runtimePerformance'
 import { preloadPassengerMapAssets, preloadPassengerMapPage } from './pageLoaders'
-import type { BusRoute } from '../types/domain'
+import type { BusRoute, PassengerMapSnapshot } from '../types/domain'
 
 function preloadPassengerMapRoute() {
   preloadPassengerMapAssets()
@@ -16,38 +16,10 @@ function preloadPassengerMapRouteOnTouch() {
 }
 
 const passengerAccess = {
-  title: 'Pasajeros',
   href: '/passenger-map',
+  actionLabel: 'Abrir mapa',
   description:
-    'Explora rutas reales, puntos guia y zonas clave de San Jose del Cabo desde el mapa.',
-  actionLabel: 'Ver mapa',
-}
-
-const driverAccess = {
-  title: 'Conductor',
-  href: '/driver/login',
-  description: 'Inicia sesi\u00f3n, elige ruta y comparte ubicaci\u00f3n en tiempo real.',
-  actionLabel: 'Entrar como conductor',
-}
-
-function BusIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" className="h-4.5 w-4.5">
-      <path
-        d="M7 4.75h10c2.07 0 3.75 1.68 3.75 3.75v5.75A2.75 2.75 0 0 1 18 17h-1.1a1.9 1.9 0 0 1-3.8 0h-2.2a1.9 1.9 0 0 1-3.8 0H6A2.75 2.75 0 0 1 3.25 14.25V8.5C3.25 6.43 4.93 4.75 7 4.75Z"
-        fill="currentColor"
-        opacity="0.14"
-      />
-      <path
-        d="M7 4.75h10c2.07 0 3.75 1.68 3.75 3.75v5.75A2.75 2.75 0 0 1 18 17h-1.1a1.9 1.9 0 0 1-3.8 0h-2.2a1.9 1.9 0 0 1-3.8 0H6A2.75 2.75 0 0 1 3.25 14.25V8.5C3.25 6.43 4.93 4.75 7 4.75Zm0 0V3.25M17 4.75V3.25M6.5 9.25h11m-10 3h1m7 0h1M8.2 17a.4.4 0 1 0 0 .8a.4.4 0 0 0 0-.8Zm7.6 0a.4.4 0 1 0 0 .8a.4.4 0 0 0 0-.8Z"
-        fill="none"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="1.7"
-      />
-    </svg>
-  )
+    'Consulta rutas reales de San Jose del Cabo, encuentra referencias del trayecto y revisa unidades activas cuando esten transmitiendo senal.',
 }
 
 function ArrowIcon() {
@@ -65,16 +37,16 @@ function ArrowIcon() {
   )
 }
 
-function RouteIcon() {
+function BusIcon() {
   return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" className="h-4 w-4">
+    <svg viewBox="0 0 24 24" aria-hidden="true" className="h-5 w-5">
       <path
-        d="M5 18c0-1.1.9-2 2-2h1l2-8h4l2 8h1a2 2 0 1 1 0 4H7a2 2 0 0 1-2-2Z"
+        d="M6.8 4.75h10.4a3 3 0 0 1 3 3v6.7a2.55 2.55 0 0 1-2.55 2.55h-.75a1.9 1.9 0 0 1-3.8 0h-2.2a1.9 1.9 0 0 1-3.8 0h-.75a2.55 2.55 0 0 1-2.55-2.55v-6.7a3 3 0 0 1 3-3Z"
         fill="currentColor"
-        opacity="0.16"
+        opacity="0.14"
       />
       <path
-        d="M7 18h10M10 8h4M9.5 16l1-8m4 8-1-8M7 18a2 2 0 1 0 0 4m10-4a2 2 0 1 1 0 4"
+        d="M6.8 4.75h10.4a3 3 0 0 1 3 3v6.7a2.55 2.55 0 0 1-2.55 2.55h-.75a1.9 1.9 0 0 1-3.8 0h-2.2a1.9 1.9 0 0 1-3.8 0h-.75a2.55 2.55 0 0 1-2.55-2.55v-6.7a3 3 0 0 1 3-3Zm.2 4.3h10M8 12.25h1m6 0h1M8.2 17a.4.4 0 1 0 0 .8a.4.4 0 0 0 0-.8Zm7.6 0a.4.4 0 1 0 0 .8a.4.4 0 0 0 0-.8Z"
         fill="none"
         stroke="currentColor"
         strokeLinecap="round"
@@ -85,48 +57,55 @@ function RouteIcon() {
   )
 }
 
-function InfoIcon() {
+function CompassIcon() {
   return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" className="h-4 w-4">
-      <circle cx="12" cy="12" r="9" fill="currentColor" opacity="0.14" />
+    <svg viewBox="0 0 24 24" aria-hidden="true" className="h-5 w-5">
+      <circle cx="12" cy="12" r="8.5" fill="currentColor" opacity="0.14" />
       <path
-        d="M12 10.25v5m0-8.5h.01"
+        d="m14.95 8.6-1.7 4.65-4.65 1.7 1.7-4.65 4.65-1.7Z"
         fill="none"
         stroke="currentColor"
         strokeLinecap="round"
         strokeLinejoin="round"
         strokeWidth="1.8"
       />
-    </svg>
-  )
-}
-
-function PassengerIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" className="h-5 w-5">
-      <circle cx="12" cy="7.5" r="3" fill="currentColor" opacity="0.14" />
-      <path
-        d="M6.5 18.5a5.5 5.5 0 0 1 11 0M12 10.5a3 3 0 1 0 0-6a3 3 0 0 0 0 6Z"
+      <circle
+        cx="12"
+        cy="12"
+        r="8.5"
         fill="none"
         stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="1.8"
+        strokeWidth="1.6"
       />
     </svg>
   )
 }
 
-function DriverIcon() {
+function MapIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" className="h-5 w-5">
       <path
-        d="M5 17.5a2.5 2.5 0 0 1 2.5-2.5h9A2.5 2.5 0 0 1 19 17.5v1.5H5v-1.5Z"
+        d="m4.75 6.75 4.75-2 5 2 4.75-2v12.5l-4.75 2-5-2-4.75 2V6.75Z"
         fill="currentColor"
         opacity="0.14"
       />
       <path
-        d="M8.5 9.5a3.5 3.5 0 1 0 7 0a3.5 3.5 0 0 0-7 0Zm-3.5 9v-1a2.5 2.5 0 0 1 2.5-2.5h9a2.5 2.5 0 0 1 2.5 2.5v1"
+        d="m4.75 6.75 4.75-2 5 2 4.75-2v12.5l-4.75 2-5-2-4.75 2V6.75Zm4.75-2v12.5m5-10.5v12.5"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="1.7"
+      />
+    </svg>
+  )
+}
+
+function RouteIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className="h-4 w-4">
+      <path
+        d="M7.5 17.5c4.6 0 2.9-11 8.8-11a3.2 3.2 0 1 1 0 6.4H7.8a3 3 0 1 0 0 6h8.7"
         fill="none"
         stroke="currentColor"
         strokeLinecap="round"
@@ -141,15 +120,7 @@ function SignalIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" className="h-4 w-4">
       <path
-        d="M4 17.5a8 8 0 0 1 16 0"
-        fill="none"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="1.8"
-      />
-      <path
-        d="M7.5 17.5a4.5 4.5 0 0 1 9 0"
+        d="M4 17.5a8 8 0 0 1 16 0M7.5 17.5a4.5 4.5 0 0 1 9 0"
         fill="none"
         stroke="currentColor"
         strokeLinecap="round"
@@ -165,55 +136,21 @@ function getTransportTypeLabel(transportType: BusRoute['transportType']) {
   return transportType === 'colectivo' ? 'Colectivo' : 'Urbano'
 }
 
-function formatCompactRelativeTime(value: string | null) {
-  if (!value) return 'Sin señal'
+function getRouteReferenceLabel(route: BusRoute) {
+  const landmarks = route.passengerInfo.landmarks.slice(0, 2)
 
-  const elapsedSeconds = Math.max(
-    0,
-    Math.round((Date.now() - new Date(value).getTime()) / 1000),
-  )
-
-  if (elapsedSeconds < 60) {
-    return 'Ahora'
+  if (landmarks.length === 0) {
+    return route.direction || 'Trayecto disponible'
   }
 
-  const elapsedMinutes = Math.round(elapsedSeconds / 60)
-
-  if (elapsedMinutes < 60) {
-    return `${elapsedMinutes} min`
-  }
-
-  return `${Math.round(elapsedMinutes / 60)} h`
+  return landmarks.join(' / ')
 }
 
 function scrollToAboutSection() {
-  document
-    .getElementById('home-about-cabobus')
-    ?.scrollIntoView({
-      behavior: prefersLiteMobileUi() ? 'auto' : 'smooth',
-      block: 'start',
-    })
-}
-
-function HomeRoutesCarouselFallback() {
-  return (
-    <div className="home-glass rounded-[1.25rem] border border-white/70 bg-white/80 px-3 py-3 shadow-[0_14px_24px_-24px_rgba(15,35,54,0.34)] backdrop-blur">
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-teal-700">
-          Rutas disponibles
-        </p>
-        <Link
-          to={passengerAccess.href}
-          onMouseEnter={preloadPassengerMapRoute}
-          onFocus={preloadPassengerMapRoute}
-          onTouchStart={preloadPassengerMapRouteOnTouch}
-          className="inline-flex min-h-8 items-center justify-center rounded-full border border-slate-200 bg-white px-3 text-[0.72rem] font-semibold text-slate-700 transition hover:border-teal-300 hover:text-teal-700"
-        >
-          Abrir mapa
-        </Link>
-      </div>
-    </div>
-  )
+  document.getElementById('home-about-cabobus')?.scrollIntoView({
+    behavior: prefersLiteMobileUi() ? 'auto' : 'smooth',
+    block: 'start',
+  })
 }
 
 type HomeRouteEntry = {
@@ -238,37 +175,59 @@ function buildHomeRouteEntries(routes: BusRoute[]) {
     })
 }
 
-function HomeRoutesCarousel() {
-  const snapshot = usePassengerMapSnapshot()
+function HomeRoutesFallback() {
+  return (
+    <section className="min-w-0 rounded-[1.35rem] border border-slate-200 bg-white/92 p-3 shadow-[0_14px_28px_-24px_rgba(15,35,54,0.3)]">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-teal-700">
+          Mapa publico
+        </p>
+        <Link
+          to={passengerAccess.href}
+          onMouseEnter={preloadPassengerMapRoute}
+          onFocus={preloadPassengerMapRoute}
+          onTouchStart={preloadPassengerMapRouteOnTouch}
+          className="inline-flex min-h-8 items-center justify-center rounded-full border border-slate-200 bg-white px-3 text-[0.72rem] font-semibold text-slate-700 transition hover:border-teal-300 hover:text-teal-700"
+        >
+          Ver rutas
+        </Link>
+      </div>
+      <p className="mt-2 text-sm leading-6 text-slate-600">
+        Abre el mapa para consultar rutas y referencias de San Jose del Cabo.
+      </p>
+    </section>
+  )
+}
 
+function HomeRouteStrip({ snapshot }: { snapshot: PassengerMapSnapshot | undefined }) {
   const routeEntries = useMemo(
-    () => (snapshot ? buildHomeRouteEntries(snapshot.routes).slice(0, 12) : []),
+    () => (snapshot ? buildHomeRouteEntries(snapshot.routes).slice(0, 10) : []),
     [snapshot],
   )
 
   if (snapshot === undefined) {
     return (
-      <div className="home-glass rounded-[1.25rem] border border-white/70 bg-white/80 px-3 py-3 shadow-[0_14px_24px_-24px_rgba(15,35,54,0.34)] backdrop-blur">
+      <section className="min-w-0 rounded-[1.35rem] border border-slate-200 bg-white/92 p-3 shadow-[0_14px_28px_-24px_rgba(15,35,54,0.3)]">
         <div className="flex items-center justify-between gap-3">
           <p className="text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-teal-700">
             Rutas disponibles
           </p>
           <div className="mobile-perf-pulse h-6 w-16 animate-pulse rounded-full bg-slate-200/80" />
         </div>
-        <div className="mt-2.5 flex gap-2 overflow-hidden">
+        <div className="mt-3 flex gap-2 overflow-hidden">
           {[0, 1, 2].map((item) => (
             <div
               key={item}
-              className="mobile-perf-pulse h-16 min-w-[9.5rem] animate-pulse rounded-[1rem] bg-slate-200/75"
+              className="mobile-perf-pulse h-16 min-w-[10rem] animate-pulse rounded-[1rem] bg-slate-200/75"
             />
           ))}
         </div>
-      </div>
+      </section>
     )
   }
 
   return (
-    <section className="home-glass rounded-[1.25rem] border border-white/72 bg-white/80 px-3 py-3 shadow-[0_14px_24px_-24px_rgba(15,35,54,0.34)] backdrop-blur">
+    <section className="min-w-0 rounded-[1.35rem] border border-slate-200 bg-white/92 p-3 shadow-[0_14px_28px_-24px_rgba(15,35,54,0.3)]">
       <div className="flex items-center justify-between gap-3">
         <p className="text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-teal-700">
           Rutas disponibles
@@ -278,7 +237,7 @@ function HomeRoutesCarousel() {
         </span>
       </div>
 
-      <div className="mt-2 flex snap-x gap-1 overflow-x-auto pb-1">
+      <div className="mt-3 flex snap-x gap-2 overflow-x-auto pb-1">
         {routeEntries.map((entry) => (
           <Link
             key={entry.route.id}
@@ -286,7 +245,7 @@ function HomeRoutesCarousel() {
             onMouseEnter={preloadPassengerMapRoute}
             onFocus={preloadPassengerMapRoute}
             onTouchStart={preloadPassengerMapRouteOnTouch}
-            className="home-card group min-w-[9.75rem] snap-start rounded-[1rem] border border-slate-200/80 bg-gradient-to-br from-white via-white to-teal-50/70 px-2.5 py-2 text-left shadow-[0_12px_20px_-22px_rgba(15,35,54,0.34)] transition hover:-translate-y-0.5 hover:border-teal-300"
+            className="home-card group min-w-[10.25rem] snap-start rounded-[1rem] border border-slate-200 bg-white px-3 py-3 text-left shadow-[0_12px_20px_-22px_rgba(15,35,54,0.34)] transition hover:-translate-y-0.5 hover:border-teal-300"
           >
             <div className="flex items-center justify-between gap-2">
               <span
@@ -298,24 +257,18 @@ function HomeRoutesCarousel() {
               >
                 <RouteIcon />
               </span>
-              <span className="rounded-full bg-slate-900 px-2 py-1 text-[0.6rem] font-semibold uppercase tracking-[0.12em] text-white">
+              <span className="rounded-full bg-slate-100 px-2 py-1 text-[0.6rem] font-semibold uppercase tracking-[0.12em] text-slate-700">
                 {getTransportTypeLabel(entry.route.transportType)}
-              </span>
-              <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-1 font-semibold text-slate-700">
-                <RouteIcon />
-                {entry.referencePointCount}
               </span>
             </div>
 
-            <p className="mt-1.5 line-clamp-2 min-h-[2rem] text-[0.86rem] font-semibold leading-5 text-slate-900">
+            <p className="mt-2 line-clamp-2 min-h-[2.5rem] text-[0.88rem] font-semibold leading-5 text-slate-900">
               {entry.route.name}
             </p>
 
             <p className="mt-1.5 line-clamp-2 text-[0.68rem] font-semibold leading-5 text-slate-500">
-              {entry.route.passengerInfo.landmarks.slice(0, 3).join(' · ') ||
-                `Disponible ${formatCompactRelativeTime(new Date().toISOString())}`}
+              {getRouteReferenceLabel(entry.route)}
             </p>
-
           </Link>
         ))}
       </div>
@@ -323,85 +276,128 @@ function HomeRoutesCarousel() {
   )
 }
 
-function HomeConnectedRoutesCarousel() {
+function HomePassengerOverview() {
+  const snapshot = usePassengerMapSnapshot()
+  const activeVehicleCount = snapshot?.activeVehicles.length ?? 0
+  const routeCount = snapshot?.routes.length
+
+  return (
+    <div className="min-w-0 space-y-4">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+        <div className="rounded-[1.1rem] border border-slate-200 bg-white px-3 py-3">
+          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-slate-500">
+            Rutas
+          </p>
+          <p className="mt-1 text-2xl font-semibold text-slate-900">
+            {routeCount ?? '--'}
+          </p>
+        </div>
+        <div className="rounded-[1.1rem] border border-slate-200 bg-white px-3 py-3">
+          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-slate-500">
+            Senales
+          </p>
+          <p className="mt-1 text-2xl font-semibold text-slate-900">
+            {activeVehicleCount}
+          </p>
+        </div>
+        <div className="col-span-2 rounded-[1.1rem] border border-teal-100 bg-teal-50 px-3 py-3 text-teal-900 sm:col-span-1">
+          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-teal-700">
+            Acceso
+          </p>
+          <p className="mt-1 text-sm font-semibold leading-5">Sin registro para consultar</p>
+        </div>
+      </div>
+
+      <HomeRouteStrip snapshot={snapshot} />
+    </div>
+  )
+}
+
+function HomeConnectedPassengerOverview() {
   if (!convexUrl) {
-    return <HomeRoutesCarouselFallback />
+    return <HomeRoutesFallback />
   }
 
-  return <HomeRoutesCarousel />
+  return <HomePassengerOverview />
+}
+
+function HomeMapPreview() {
+  return (
+    <div className="relative min-h-[20rem] overflow-hidden rounded-[1.8rem] border border-slate-200 bg-[#dcefdc] shadow-[0_28px_44px_-34px_rgba(15,35,54,0.5)]">
+      <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(15,23,42,0.06)_1px,transparent_1px),linear-gradient(0deg,rgba(15,23,42,0.06)_1px,transparent_1px)] bg-[length:3.8rem_3.8rem]" />
+      <div className="absolute left-[7%] top-[16%] h-[34rem] w-12 -rotate-[34deg] rounded-full border-[1.35rem] border-white/78" />
+      <div className="absolute left-[30%] top-[-8%] h-[35rem] w-12 rotate-[18deg] rounded-full border-[1.2rem] border-white/72" />
+      <div className="absolute right-[8%] top-[6%] h-[32rem] w-12 rotate-[46deg] rounded-full border-[1.15rem] border-white/70" />
+      <div className="absolute left-[12%] right-[16%] top-[48%] h-3 rotate-[-8deg] rounded-full bg-teal-500 shadow-[0_0_0_5px_rgba(20,184,166,0.18)]" />
+      <div className="absolute left-[20%] right-[22%] top-[64%] h-3 rotate-[15deg] rounded-full bg-amber-400 shadow-[0_0_0_5px_rgba(251,191,36,0.18)]" />
+      <div className="absolute left-[38%] right-[12%] top-[31%] h-3 rotate-[30deg] rounded-full bg-sky-500 shadow-[0_0_0_5px_rgba(14,165,233,0.16)]" />
+      <div className="absolute left-[16%] top-[44%] inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-2 text-xs font-semibold text-slate-800 shadow-[0_16px_28px_-20px_rgba(15,23,42,0.45)]">
+        <MapIcon />
+        Centro
+      </div>
+      <div className="absolute right-[11%] top-[24%] inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-2 text-xs font-semibold text-slate-800 shadow-[0_16px_28px_-20px_rgba(15,23,42,0.45)]">
+        <BusIcon />
+        Unidad activa
+      </div>
+      <div className="absolute bottom-4 left-4 right-4 rounded-[1.2rem] border border-white/80 bg-white/90 p-3 shadow-[0_18px_34px_-24px_rgba(15,35,54,0.45)]">
+        <p className="text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-teal-700">
+          Vista de pasajero
+        </p>
+        <p className="mt-1 text-sm font-semibold leading-5 text-slate-900">
+          Rutas, referencias y unidades activas en un solo mapa.
+        </p>
+      </div>
+    </div>
+  )
 }
 
 function HomeAboutSection() {
   return (
     <section
       id="home-about-cabobus"
-      className="home-about-surface rounded-[2rem] border border-slate-900/10 bg-[linear-gradient(135deg,rgba(14,116,144,0.98),rgba(8,47,73,0.96))] p-5 text-white shadow-[0_28px_52px_-34px_rgba(8,47,73,0.9)] sm:p-6"
+      className="min-w-0 rounded-[1.8rem] border border-slate-200 bg-white p-5 shadow-[0_22px_42px_-34px_rgba(15,35,54,0.45)] sm:p-6"
     >
-      <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-        <div className="max-w-2xl">
-          <p className="text-[0.7rem] font-semibold uppercase tracking-[0.3em] text-cyan-100/88">
-            {'Qué es CaboBus'}
-          </p>
-
-          <div className="flex justify-center items-center">
-            <img
-              src="/logo.png"
-              alt="CaboBus"
-              className=" h-42 w-52 shrink-0 object-contain sm:h-14 sm:w-28"
-            />
-          </div>
-
-
-
-
-        </div>
-
-        <div className="grid gap-2 text-sm sm:grid-cols-3 lg:w-[27rem]">
-          <div className="rounded-[1.35rem] border border-white/14 bg-white/10 p-3.5">
-            <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-white/12 text-cyan-100">
-              <PassengerIcon />
-            </span>
-            <p className="mt-3 font-semibold text-white">{'Mapa público'}</p>
-            <p className="mt-1 text-cyan-50/80">{'Consulta rápida desde el celular.'}</p>
-          </div>
-          <div className="rounded-[1.35rem] border border-white/14 bg-white/10 p-3.5">
-            <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-white/12 text-cyan-100">
-              <SignalIcon />
-            </span>
-            <p className="mt-3 font-semibold text-white">Puntos guia</p>
-            <p className="mt-1 text-cyan-50/80">Referencias visuales para leer mejor el mapa.</p>
-          </div>
-          <div className="rounded-[1.35rem] border border-white/14 bg-white/10 p-3.5">
-            <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-white/12 text-cyan-100">
-              <DriverIcon />
-            </span>
-            <p className="mt-3 font-semibold text-white">Flujo conductor</p>
-            <p className="mt-1 text-cyan-50/80">{'Activa servicio y comparte ubicación.'}</p>
-          </div>
-        </div>
+      <div className="max-w-3xl">
+        <p className="text-[0.7rem] font-semibold uppercase tracking-[0.28em] text-teal-700">
+          Que es CaboBus
+        </p>
+        <h2 className="mt-2 font-display text-2xl leading-8 text-slate-900 sm:text-3xl">
+          Una guia sencilla para moverte en San Jose del Cabo
+        </h2>
+        <p className="mt-3 text-sm leading-6 text-slate-600 sm:text-base">
+          CaboBus agrega una capa digital sobre las rutas existentes. No necesitas crear una
+          cuenta: abre el mapa, revisa los recorridos disponibles y usa las referencias visuales
+          para decidir que ruta consultar.
+        </p>
       </div>
 
-      <div className="mt-5 grid gap-3 sm:grid-cols-3">
-        <div className="rounded-[1.35rem] border border-white/12 bg-white/8 p-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-100/88">
-            1
+      <div className="mt-5 grid gap-3 md:grid-cols-3">
+        <div className="rounded-[1.2rem] border border-slate-200 bg-slate-50 p-4">
+          <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-teal-700">
+            <MapIcon />
+          </span>
+          <p className="mt-3 font-semibold text-slate-900">Abre el mapa</p>
+          <p className="mt-1 text-sm leading-6 text-slate-600">
+            Entra directo a la vista publica desde cualquier celular.
           </p>
-          <p className="mt-2 font-semibold text-white">Elige una ruta</p>
-          <p className="mt-1 text-sm text-cyan-50/78">Desde el carrusel o el mapa.</p>
         </div>
-        <div className="rounded-[1.35rem] border border-white/12 bg-white/8 p-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-100/88">
-            2
+        <div className="rounded-[1.2rem] border border-slate-200 bg-slate-50 p-4">
+          <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-sky-700">
+            <RouteIcon />
+          </span>
+          <p className="mt-3 font-semibold text-slate-900">Elige una ruta</p>
+          <p className="mt-1 text-sm leading-6 text-slate-600">
+            Filtra por trayecto y enfoca el recorrido para leerlo mejor.
           </p>
-          <p className="mt-2 font-semibold text-white">Ubica colonias y puntos</p>
-          <p className="mt-1 text-sm text-cyan-50/78">Apoyate en referencias visuales del recorrido.</p>
         </div>
-        <div className="rounded-[1.35rem] border border-white/12 bg-white/8 p-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-100/88">
-            3
+        <div className="rounded-[1.2rem] border border-slate-200 bg-slate-50 p-4">
+          <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-amber-700">
+            <SignalIcon />
+          </span>
+          <p className="mt-3 font-semibold text-slate-900">Revisa actividad</p>
+          <p className="mt-1 text-sm leading-6 text-slate-600">
+            Las unidades aparecen cuando hay una senal reciente disponible.
           </p>
-          <p className="mt-2 font-semibold text-white">Abre el mapa completo</p>
-          <p className="mt-1 text-sm text-cyan-50/78">Amplia la vista para leer mejor la ciudad.</p>
         </div>
       </div>
     </section>
@@ -452,129 +448,69 @@ export function HomePage() {
   }
 
   return (
-    <section className="mx-auto flex w-full max-w-5xl items-start justify-center">
-      <div className="home-hero-surface panel relative w-full overflow-hidden border border-white/82 bg-[linear-gradient(180deg,rgba(255,251,245,0.98),rgba(239,246,255,0.96))]">
-        <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-teal-500 via-cyan-500 to-amber-400" />
-        <div className="home-ornament absolute -left-16 top-8 h-44 w-44 rounded-full bg-teal-200/45 blur-3xl" />
-        <div className="home-ornament absolute -right-12 top-16 h-40 w-40 rounded-full bg-amber-200/50 blur-3xl" />
-        <div className="home-ornament absolute bottom-0 left-1/2 h-28 w-72 -translate-x-1/2 rounded-full bg-cyan-100/45 blur-3xl" />
+    <section className="mx-auto w-full max-w-6xl px-3 pb-5 pt-2 sm:px-5 sm:pb-8 sm:pt-4">
+      <div className="overflow-hidden rounded-[2rem] border border-white/85 bg-[linear-gradient(180deg,#fffaf0_0%,#f8fbfd_46%,#eef7f4_100%)] shadow-[0_30px_70px_-46px_rgba(15,35,54,0.55)]">
+        <div className="h-1 bg-gradient-to-r from-teal-500 via-sky-500 to-amber-400" />
 
-        <div className="relative space-y-3 px-4 py-4 sm:px-6 sm:py-6">
-          <div className="rounded-[1.45rem] border border-white/65 bg-slate-950/[0.04] px-3 py-3">
-            <div className="flex items-start justify-between gap-2.5">
+        <div className="grid gap-5 px-4 py-5 lg:grid-cols-[minmax(0,1.02fr)_minmax(22rem,0.82fr)] lg:items-center lg:px-7 lg:py-7">
+          <div>
+            <div className="flex items-center justify-between gap-3">
               <img
                 src="/logo.png"
                 alt="CaboBus"
-                className="h-12 w-24 shrink-0 object-contain sm:h-14 sm:w-28"
+                className="h-14 w-28 shrink-0 object-contain sm:h-16 sm:w-32"
               />
-
-              <div className="flex max-w-[14rem] flex-wrap justify-end gap-2">
-
-
-                <button
-                  type="button"
-                  onClick={scrollToAboutSection}
-                  className="home-soft-shadow inline-flex min-h-8 items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-3 text-[0.72rem] font-semibold text-slate-700 shadow-[0_12px_20px_-24px_rgba(15,23,42,0.45)] transition hover:border-teal-300 hover:text-teal-700"
-                >
-                  <InfoIcon />
-                  {'Qué es CaboBus'}
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={scrollToAboutSection}
+                className="inline-flex min-h-9 items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-3 text-[0.72rem] font-semibold text-slate-700 shadow-[0_12px_20px_-24px_rgba(15,23,42,0.45)] transition hover:border-teal-300 hover:text-teal-700"
+              >
+                <CompassIcon />
+                Que es
+              </button>
             </div>
 
-            <div className="mt-2.5">
-              <HomeConnectedRoutesCarousel />
-            </div>
-          </div>
-
-          <div className="grid gap-3 lg:grid-cols-[minmax(0,1.35fr)_minmax(280px,0.8fr)]">
-            <article className="home-cta-card rounded-[1.8rem] border border-white/90 bg-gradient-to-br from-teal-100 via-cyan-50 to-white p-4 text-left shadow-[0_22px_38px_-30px_rgba(15,35,54,0.34)] sm:p-5">
-              <div className="flex items-center gap-3">
-                <span className="home-soft-shadow inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-900 text-white shadow-[0_14px_26px_-20px_rgba(15,23,42,0.7)]">
-                  <PassengerIcon />
-                </span>
-                <div>
-                  <p className="text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-teal-800">
-                    {'Acceso público'}
-                  </p>
-                  <h1 className="mt-1 font-display text-[2.05rem] leading-9 text-slate-900 sm:text-[2.2rem]">
-                    {passengerAccess.title}
-                  </h1>
-                </div>
-              </div>
-
-              <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600 sm:text-base">
+            <div className="mt-5 max-w-2xl">
+              <p className="text-[0.72rem] font-semibold uppercase tracking-[0.28em] text-teal-700">
+                Mapa publico de rutas
+              </p>
+              <h1 className="mt-3 font-display text-[2.75rem] leading-[0.96] text-slate-950 sm:text-[4.2rem]">
+                Encuentra tu ruta en CaboBus
+              </h1>
+              <p className="mt-4 max-w-xl text-base leading-7 text-slate-600 sm:text-lg">
                 {passengerAccess.description}
               </p>
+            </div>
 
-              <div className="mt-3 flex flex-wrap gap-2">
-                <span className="inline-flex items-center gap-2 rounded-full bg-white/88 px-2.5 py-1.5 text-[0.68rem] font-semibold text-slate-700">
-                  <RouteIcon />
-                  Rutas reales
-                </span>
-                <span className="inline-flex items-center gap-2 rounded-full bg-white/88 px-2.5 py-1.5 text-[0.68rem] font-semibold text-slate-700">
-                  <SignalIcon />
-                  Puntos guia
-                </span>
-
-              </div>
-
+            <div className="mt-5 flex flex-col gap-3 sm:flex-row">
               <Link
                 to={passengerAccess.href}
                 onMouseEnter={preloadPassengerMapRoute}
                 onFocus={preloadPassengerMapRoute}
                 onTouchStart={preloadPassengerMapRouteOnTouch}
-                className="mt-4 flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-teal-700"
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-slate-900 px-6 py-3 text-sm font-semibold text-white shadow-[0_18px_32px_-24px_rgba(15,23,42,0.75)] transition hover:bg-teal-700"
               >
                 {passengerAccess.actionLabel}
                 <ArrowIcon />
               </Link>
-            </article>
-
-            <aside className="home-ops-card rounded-[1.7rem] border border-amber-200/80 bg-[linear-gradient(180deg,rgba(255,251,235,0.98),rgba(255,255,255,0.94))] p-4 shadow-[0_18px_34px_-30px_rgba(148,84,21,0.4)] sm:p-5">
-              <div className="flex items-center gap-3">
-                <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-100 text-amber-700">
-                  <DriverIcon />
-                </span>
-                <div>
-                  <p className="text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-amber-700">
-                    Acceso operativo
-                  </p>
-                  <h2 className="mt-1 font-display text-[1.85rem] leading-8 text-slate-900">
-                    {driverAccess.title}
-                  </h2>
-                </div>
-              </div>
-
-              <p className="mt-3 text-sm leading-6 text-slate-600 sm:text-base">
-                {driverAccess.description}
-              </p>
-
-              <div className="mt-3 grid gap-2 text-sm text-slate-700">
-                <div className="flex items-center gap-2 rounded-[1.05rem] bg-white/85 px-3 py-2.5">
-                  <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
-                    <BusIcon />
-                  </span>
-                  <span>Activa tu servicio</span>
-                </div>
-                <div className="flex items-center gap-2 rounded-[1.05rem] bg-white/85 px-3 py-2.5">
-                  <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
-                    <SignalIcon />
-                  </span>
-                  <span>{'Comparte ubicación'}</span>
-                </div>
-              </div>
-
               <Link
-                to={driverAccess.href}
-                className="mt-4 flex min-h-11 w-full items-center justify-center gap-2 rounded-full border border-slate-900 bg-white px-5 py-3 text-sm font-semibold text-slate-900 transition hover:border-amber-400 hover:bg-amber-400/90"
+                to="/passenger-map"
+                onMouseEnter={preloadPassengerMapRoute}
+                onFocus={preloadPassengerMapRoute}
+                onTouchStart={preloadPassengerMapRouteOnTouch}
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-6 py-3 text-sm font-semibold text-slate-800 transition hover:border-teal-300 hover:text-teal-700"
               >
-                {driverAccess.actionLabel}
-                <ArrowIcon />
+                Explorar rutas
+                <MapIcon />
               </Link>
-            </aside>
+            </div>
           </div>
 
+          <HomeMapPreview />
+        </div>
+
+        <div className="grid min-w-0 gap-4 px-4 pb-5 lg:grid-cols-[minmax(0,0.76fr)_minmax(0,1fr)] lg:px-7 lg:pb-7">
+          <HomeConnectedPassengerOverview />
           <HomeAboutSection />
         </div>
       </div>
