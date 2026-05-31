@@ -52,23 +52,32 @@ export function usePassengerGeolocation() {
   const [isRequestingPermission, setIsRequestingPermission] = useState(false)
   const [isFollowingPosition, setIsFollowingPosition] = useState(false)
   const [position, setPosition] = useState<Coordinates | null>(null)
+  const [throttledPosition, setThrottledPosition] = useState<Coordinates | null>(null)
   const [accuracyMeters, setAccuracyMeters] = useState<number | null>(null)
   const [capturedAt, setCapturedAt] = useState<string | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   const watchIdRef = useRef<number | null>(null)
   const permissionStatusRef = useRef<PermissionStatus | null>(null)
+  const lastThrottledTimeRef = useRef<number>(0)
 
   const commitPosition = useCallback((nextPosition: GeolocationPosition) => {
     setPermissionState('granted')
-    setPosition({
+    const newPos = {
       lat: nextPosition.coords.latitude,
       lng: nextPosition.coords.longitude,
-    })
+    }
+    setPosition(newPos)
     setAccuracyMeters(
       Number.isFinite(nextPosition.coords.accuracy) ? nextPosition.coords.accuracy : null,
     )
     setCapturedAt(new Date(nextPosition.timestamp).toISOString())
+
+    const now = Date.now()
+    if (now - lastThrottledTimeRef.current > 3000) {
+      setThrottledPosition(newPos)
+      lastThrottledTimeRef.current = now
+    }
   }, [])
 
   const clearWatch = useCallback(() => {
@@ -219,6 +228,7 @@ export function usePassengerGeolocation() {
     isRequestingPermission,
     isFollowingPosition,
     position,
+    throttledPosition,
     accuracyMeters,
     capturedAt,
     errorMessage,

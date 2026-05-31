@@ -120,7 +120,7 @@ export function RoleLoginCard({
           {showLogo ? (
             <div className="text-center">
               <img
-                src="/logo.png"
+                src="/assets/logo.png"
                 alt="CaboBus"
                 className="mx-auto h-24 w-40 object-contain sm:h-28 sm:w-48"
               />

@@ -81,7 +81,7 @@ export function getMapRuntimePerformanceProfile(): MapRuntimePerformanceProfile 
     maxTileCacheSize: prefersLiteMap ? 24 : null,
     fadeDuration: prefersLiteMap ? 0 : 300,
     refreshExpiredTiles: !prefersLiteMap,
-    trackResize: false,
+    trackResize: true,
     renderWorldCopies: false,
     showNavigationControl: !prefersLiteMap,
     canvasContextAttributes: {

@@ -100,11 +100,7 @@ export function buildPassengerMapReferencePoints(
     })
   })
 
-  const routePoints = routes.flatMap((route) =>
-    buildRouteDerivedReferencePoints(route, officialStopsByRouteId.get(route.id) ?? []),
-  )
-
-  return [...officialStops, ...routePoints]
+  return [...officialStops]
 }
 
 export function countPassengerMapReferencePointsByRoute(
@@ -149,7 +145,7 @@ function buildOfficialStopReferencePoints(
   })
 }
 
-function buildRouteDerivedReferencePoints(
+export function buildRouteDerivedReferencePoints(
   route: BusRoute,
   officialStops: PassengerMapReferencePoint[],
 ) {

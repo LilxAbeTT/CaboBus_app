@@ -1,6 +1,6 @@
 # Project Map - CaboBus
 
-Estado real revisado y actualizado el 2026-04-17 sobre el repositorio y el worktree actual.
+Estado real revisado y actualizado el 2026-05-29 sobre el repositorio y el worktree actual.
 
 Esta revision incluye tanto la base web ya funcional como los cambios locales visibles de integracion movil, tracking nativo y soporte HTTP para ubicacion del conductor.
 
@@ -227,9 +227,12 @@ Archivos clave:
 - `src/features/map/components/PassengerMapView.tsx`
 - `src/features/map/components/PassengerMapHeader.tsx`
 - `src/features/map/components/PassengerMapSidebar.tsx`
+- `src/features/map/components/PassengerMapSidebarAssistPanel.tsx`
+- `src/features/map/components/PassengerMapSelectionSummary.tsx`
 - `src/features/map/components/PassengerMapOverlays.tsx`
 - `src/features/map/components/passengerMapViewUtils.ts`
 - `src/features/map/hooks/usePassengerMapSnapshot.ts`
+- `src/features/map/hooks/usePassengerRouteLibrary.ts`
 - `src/features/map/hooks/usePassengerRouteSelection.ts`
 - `src/features/map/hooks/usePassengerGeolocation.ts`
 - `src/lib/mapGeometry.ts`
@@ -679,7 +682,7 @@ En esta actualizacion documental no se re-ejecutaron:
 - `npm run convex:codegen`
 - `npm run convex:seed`
 
-La revision se baso en inspeccion directa del codigo y del worktree actual del 2026-04-17.
+La revision se baso en inspeccion directa del codigo y del worktree actual del 2026-05-29.
 
 ## 17. Criterio para siguientes chats
 

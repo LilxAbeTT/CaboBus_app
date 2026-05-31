@@ -18,7 +18,7 @@ El proyecto hoy incluye:
 - TypeScript 5
 - Tailwind CSS 4
 - React Router 7
-- Leaflet + OpenStreetMap
+- MapLibre GL JS + Stadia Maps
 - Convex
 - Capacitor Android/iOS
 
@@ -58,4 +58,4 @@ El proyecto hoy incluye:
 
 Para estado real del repo, arquitectura actual y decisiones vigentes:
 
-- [project-map.md](C:\Users\larr_\Documents\CaboBus_app\.agents\project-map.md)
+- [project-map.md](.agents/project-map.md)

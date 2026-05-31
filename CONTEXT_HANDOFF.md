@@ -28,7 +28,7 @@ Principios permanentes heredados de `agents.md`:
 - TypeScript 5
 - Tailwind CSS 4
 - React Router 7
-- Leaflet + OpenStreetMap
+- MapLibre GL JS + Stadia Maps
 - Convex como backend del MVP
 
 Scripts utiles:
@@ -134,7 +134,7 @@ Estado actual de rutas:
 ### PassengerMap
 
 Estado actual:
-- renderiza rutas reales desde Convex en Leaflet;
+- renderiza rutas reales desde Convex en MapLibre GL JS;
 - renderiza unidades activas en tiempo real;
 - permite seleccionar una ruta especifica;
 - agrupa visualmente por tipo de transporte;

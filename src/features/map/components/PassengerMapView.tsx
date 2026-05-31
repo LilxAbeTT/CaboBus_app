@@ -1,4 +1,4 @@
-﻿import {
+import {
   startTransition,
   useCallback,
   useDeferredValue,
@@ -52,16 +52,13 @@ import {
 import { PassengerMapHeader } from './PassengerMapHeader'
 import {
   PassengerMapEmptyState,
-  PassengerMapInfoModal,
   PassengerRouteInfoModal,
   PassengerRoutePickerModal,
 } from './PassengerMapOverlays'
 import { PassengerMapSidebar } from './PassengerMapSidebar'
-import { PassengerMapStopSuggestionButton } from './PassengerMapSidebarAssistPanel'
 import {
   decorateVehiclesWithRouteMeta,
   formatLastUpdateTime,
-  getDisplayedRoutes,
   getDisplayedVehicles,
   getNearbyQuickRouteEntriesFromSortedRoutes,
   getLocationStatusCopy,
@@ -74,7 +71,6 @@ import {
   sortRoutesByUtility,
   type PassengerMapVehicleView,
 } from './passengerMapViewUtils'
-import { PassengerMapSelectionSummary } from './PassengerMapSelectionSummary'
 import type {
   GeoJSONSource,
   Map as MapLibreMap,
@@ -389,68 +385,6 @@ function LocationTargetIcon() {
   )
 }
 
-function ReferencePointsIcon({ active }: { active: boolean }) {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 24 24"
-      className="h-5 w-5"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M7 6.5 12 3l5 3.5v6L12 16l-5-3.5Z" opacity={active ? 1 : 0.35} />
-      <path d="M5 18.5h14" opacity={active ? 1 : 0.35} />
-      <path d="M9 20.5h6" opacity={active ? 1 : 0.35} />
-    </svg>
-  )
-}
-
-function FullscreenEnterIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 24 24"
-      className="h-5 w-5"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M8 4H4v4" />
-      <path d="M16 4h4v4" />
-      <path d="M20 16v4h-4" />
-      <path d="M4 16v4h4" />
-    </svg>
-  )
-}
-
-function FullscreenExitIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 24 24"
-      className="h-5 w-5"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M9 4H4v5" />
-      <path d="M15 4h5v5" />
-      <path d="M20 15v5h-5" />
-      <path d="M4 15v5h5" />
-      <path d="M9 9 4 4" />
-      <path d="m15 9 5-5" />
-      <path d="m15 15 5 5" />
-      <path d="m9 15-5 5" />
-    </svg>
-  )
-}
 
 function PassengerMapContent({ snapshot }: { snapshot: PassengerMapSnapshot }) {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -473,16 +407,12 @@ function PassengerMapContent({ snapshot }: { snapshot: PassengerMapSnapshot }) {
   const [showOnlyRoutesWithVisibleVehicles, setShowOnlyRoutesWithVisibleVehicles] =
     useState(false)
   const [isRoutePickerOpen, setRoutePickerOpen] = useState(false)
-  const [isInfoOpen, setInfoOpen] = useState(false)
   const [routeInfoRouteId, setRouteInfoRouteId] = useState<string | null>(null)
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null)
   const [selectedReferencePointId, setSelectedReferencePointId] = useState<string | null>(null)
   const [centerOnUserRequestCount, setCenterOnUserRequestCount] = useState(0)
   const [mapLoadStatus, setMapLoadStatus] = useState<'loading' | 'ready' | 'error'>('loading')
   const [mapLoadError, setMapLoadError] = useState<string | null>(null)
-  const [mapCenter, setMapCenter] = useState<LatLngPoint | null>(null)
-  const [showReferencePoints, setShowReferencePoints] = useState(true)
-  const [isMapExpanded, setMapExpanded] = useState(false)
   const [shouldShowPinchHint, setShouldShowPinchHint] = useState(() => {
     if (typeof window === 'undefined') {
       return false
@@ -497,6 +427,7 @@ function PassengerMapContent({ snapshot }: { snapshot: PassengerMapSnapshot }) {
     permissionState,
     isRequestingPermission,
     position: userPosition,
+    throttledPosition,
     accuracyMeters,
     errorMessage: userLocationError,
     requestPermission,
@@ -542,14 +473,14 @@ function PassengerMapContent({ snapshot }: { snapshot: PassengerMapSnapshot }) {
     routes.forEach((route) => {
       distances.set(
         route.id,
-        userPosition
-          ? getMinimumDistanceToRouteMeters(userPosition, route.segments)
+        throttledPosition
+          ? getMinimumDistanceToRouteMeters(throttledPosition, route.segments)
           : null,
       )
     })
 
     return distances
-  }, [routes, userPosition])
+  }, [routes, throttledPosition])
   const routeGroupsByUtility = useMemo(
     () =>
       routeGroups.map((group) => ({
@@ -568,10 +499,11 @@ function PassengerMapContent({ snapshot }: { snapshot: PassengerMapSnapshot }) {
   const activeTransportType =
     selectedRoute?.transportType ?? resolvedRouteCarouselTransportType
 
-  const displayedRoutes = useMemo(
-    () => getDisplayedRoutes(routeGroupsByUtility, activeTransportType),
-    [activeTransportType, routeGroupsByUtility],
-  )
+  const mapVisualRoutes = useMemo(() => {
+    return routeGroups
+      .filter((group) => group.transportType === activeTransportType)
+      .flatMap((group) => group.routes)
+  }, [routeGroups, activeTransportType])
   const displayedVehicles = useMemo(
     () =>
       getDisplayedVehicles(
@@ -666,39 +598,24 @@ function PassengerMapContent({ snapshot }: { snapshot: PassengerMapSnapshot }) {
     [referencePointById, selectedReferencePointId],
   )
   const displayedReferencePoints = useMemo(() => {
-    if (!showReferencePoints) {
-      return []
-    }
-
     const visibleRouteIds = new Set(
-      (selectedRoute ? [selectedRoute] : displayedRoutes).map((route) => route.id),
+      (selectedRoute ? [selectedRoute] : mapVisualRoutes).map((route) => route.id),
     )
 
     return referencePoints.filter((referencePoint) =>
       referencePoint.routeIds.some((routeId) => visibleRouteIds.has(routeId)),
     )
-  }, [displayedRoutes, referencePoints, selectedRoute, showReferencePoints])
+  }, [mapVisualRoutes, referencePoints, selectedRoute])
   const routeInfoRoute =
     routeInfoRouteId ? routeById.get(routeInfoRouteId) ?? null : null
   const {
-    personalRoutes,
     favoriteRouteIdSet,
     toggleFavoriteRoute,
     recordRouteUsage,
   } = usePassengerRouteLibrary(routes)
-  const visibleRouteCount = selectedRoute
-    ? 1
-    : filteredActiveRouteGroup?.routes.length ?? displayedRoutes.length
-  const visibleReferencePointCount = displayedReferencePoints.length
-  const visibleColonyReferencePointCount = displayedReferencePoints.filter(
-    (referencePoint) => referencePoint.kind === 'route_colony',
-  ).length
-  const visibleGuideReferencePointCount = displayedReferencePoints.filter(
-    (referencePoint) => referencePoint.kind === 'guide',
-  ).length
+
 
   const mapContainerRef = useRef<HTMLDivElement | null>(null)
-  const mapPanelRef = useRef<HTMLElement | null>(null)
   const mapLibreRef = useRef<Awaited<ReturnType<typeof loadMapLibre>> | null>(null)
   const mapRef = useRef<MapLibreMap | null>(null)
   const popupRef = useRef<MapLibrePopup | null>(null)
@@ -716,8 +633,8 @@ function PassengerMapContent({ snapshot }: { snapshot: PassengerMapSnapshot }) {
   const mapPerformanceProfile = useMemo(() => getMapRuntimePerformanceProfile(), [])
   const showPinchHint = mapLoadStatus === 'ready' && shouldShowPinchHint
   const routeFeatureCollection = useMemo(
-    () => buildRouteFeatureCollection(displayedRoutes, selectedRouteKey),
-    [displayedRoutes, selectedRouteKey],
+    () => buildRouteFeatureCollection(mapVisualRoutes, selectedRouteKey),
+    [mapVisualRoutes, selectedRouteKey],
   )
   const vehicleFeatureCollection = useMemo(
     () => buildVehicleFeatureCollection(displayedVehicles, selectedVehicleId),
@@ -744,8 +661,8 @@ function PassengerMapContent({ snapshot }: { snapshot: PassengerMapSnapshot }) {
     [accuracyMeters, userPosition],
   )
   const displayedRouteBounds = useMemo(
-    () => getRouteBounds(selectedRoute ? [selectedRoute] : displayedRoutes),
-    [displayedRoutes, selectedRoute],
+    () => getRouteBounds(selectedRoute ? [selectedRoute] : mapVisualRoutes),
+    [mapVisualRoutes, selectedRoute],
   )
 
   useEffect(() => {
@@ -761,50 +678,7 @@ function PassengerMapContent({ snapshot }: { snapshot: PassengerMapSnapshot }) {
     return () => window.clearTimeout(timeoutId)
   }, [showPinchHint])
 
-  useEffect(() => {
-    if (typeof document === 'undefined' || !isMapExpanded) {
-      return
-    }
 
-    const { body, documentElement } = document
-    const previousBodyOverflow = body.style.overflow
-    const previousHtmlOverflow = documentElement.style.overflow
-
-    body.style.overflow = 'hidden'
-    documentElement.style.overflow = 'hidden'
-
-    return () => {
-      body.style.overflow = previousBodyOverflow
-      documentElement.style.overflow = previousHtmlOverflow
-    }
-  }, [isMapExpanded])
-
-  useEffect(() => {
-    if (typeof window === 'undefined' || !isMapExpanded) {
-      return
-    }
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setMapExpanded(false)
-      }
-    }
-
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isMapExpanded])
-
-  useEffect(() => {
-    if (mapLoadStatus !== 'ready' || typeof window === 'undefined') {
-      return
-    }
-
-    const timeoutId = window.setTimeout(() => {
-      mapRef.current?.resize()
-    }, 60)
-
-    return () => window.clearTimeout(timeoutId)
-  }, [isMapExpanded, mapLoadStatus])
 
   const clearFollowResumeTimeout = useCallback(() => {
     if (
@@ -860,13 +734,7 @@ function PassengerMapContent({ snapshot }: { snapshot: PassengerMapSnapshot }) {
     [clearSelectedReferencePoint, clearSelectedVehicle, routeById, setSelectedRouteId],
   )
 
-  const revealMapPanel = useCallback(() => {
-    if (isMapExpanded) {
-      return
-    }
 
-    mapPanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }, [isMapExpanded])
 
   const focusRouteAndRevealMap = useCallback(
     (
@@ -875,9 +743,8 @@ function PassengerMapContent({ snapshot }: { snapshot: PassengerMapSnapshot }) {
     ) => {
       focusRoute(routeId)
       recordRouteUsage(routeId, reason)
-      revealMapPanel()
     },
-    [focusRoute, recordRouteUsage, revealMapPanel],
+    [focusRoute, recordRouteUsage],
   )
 
   const openVehiclePopup = useCallback((vehicle: PassengerMapVehicleView) => {
@@ -1029,13 +896,7 @@ function PassengerMapContent({ snapshot }: { snapshot: PassengerMapSnapshot }) {
   })
 
   const handleMapMoveEnd = useEffectEvent(() => {
-    const currentMap = mapRef.current
     const wasProgrammaticMove = isProgrammaticMapMoveRef.current
-
-    if (currentMap) {
-      const center = currentMap.getCenter()
-      setMapCenter({ lat: center.lat, lng: center.lng })
-    }
 
     isProgrammaticMapMoveRef.current = false
 
@@ -1087,29 +948,7 @@ function PassengerMapContent({ snapshot }: { snapshot: PassengerMapSnapshot }) {
     setRoutePickerOpen(false)
   }, [])
 
-  const handleOpenInfo = useCallback(() => {
-    setInfoOpen(true)
-  }, [])
 
-  const handleCloseInfo = useCallback(() => {
-    setInfoOpen(false)
-  }, [])
-
-  const handleToggleReferencePoints = useCallback(() => {
-    setShowReferencePoints((current) => {
-      const nextValue = !current
-
-      if (!nextValue) {
-        setSelectedReferencePointId(null)
-      }
-
-      return nextValue
-    })
-  }, [])
-
-  const handleToggleMapExpanded = useCallback(() => {
-    setMapExpanded((current) => !current)
-  }, [])
 
   const handleRouteSearchTermChange = useCallback((value: string) => {
     startTransition(() => {
@@ -1182,20 +1021,8 @@ function PassengerMapContent({ snapshot }: { snapshot: PassengerMapSnapshot }) {
     setRouteInfoRouteId(null)
   }, [])
 
-  const handleOpenRouteInfo = useCallback(
-    (routeId: string) => {
-      recordRouteUsage(routeId, 'info')
-      setRouteInfoRouteId(routeId)
-    },
-    [recordRouteUsage],
-  )
 
-  const handleOpenPersonalRoute = useCallback(
-    (routeId: string) => {
-      focusRouteAndRevealMap(routeId, 'quick_access')
-    },
-    [focusRouteAndRevealMap],
-  )
+
 
   useEffect(() => {
     if (!requestedRouteId) {
@@ -1247,10 +1074,7 @@ function PassengerMapContent({ snapshot }: { snapshot: PassengerMapSnapshot }) {
           setMapLoadStatus('ready')
           setMapLoadError(null)
           map?.setRenderWorldCopies(false)
-          if (map) {
-            const center = map.getCenter()
-            setMapCenter({ lat: center.lat, lng: center.lng })
-          }
+
         }
         handleError = () => {
           if (!map) {
@@ -1788,185 +1612,88 @@ function PassengerMapContent({ snapshot }: { snapshot: PassengerMapSnapshot }) {
 
   return (
     <>
-      <section className="space-y-3 px-3 pb-3 pt-2 sm:space-y-4 sm:px-4 sm:pb-4 lg:px-6">
+      <main className="fixed inset-0 h-[100dvh] w-screen overflow-hidden bg-slate-100">
+        <div ref={mapContainerRef} className="!absolute inset-0 z-0 h-full w-full" />
+
+        {mapLoadStatus !== 'ready' ? (
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-slate-950/5 px-4 text-center">
+            <div className="max-w-sm rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-[0_18px_35px_-28px_rgba(15,23,42,0.6)] backdrop-blur">
+              <p className="text-sm font-semibold text-slate-900">Cargando mapa</p>
+              <p className="mt-1 text-sm text-slate-600">
+                {mapPerformanceProfile.prefersLiteMap
+                  ? 'MapLibre esta inicializando la base ligera del mapa para movil.'
+                  : 'MapLibre esta inicializando la capa base y los estilos del mapa.'}
+              </p>
+            </div>
+          </div>
+        ) : null}
+
+        <div className="pointer-events-none absolute inset-x-3 top-3 z-10 flex justify-center">
+          <div
+            className={`transition-all duration-500 ${
+              showPinchHint
+                ? 'translate-y-0 opacity-100'
+                : '-translate-y-2 opacity-0'
+            }`}
+          >
+            <div className="passenger-pinch-hint rounded-full bg-white/94 px-4 py-2 shadow-[0_14px_28px_-24px_rgba(15,23,42,0.6)] backdrop-blur">
+              <div className="passenger-pinch-hint__gesture" aria-hidden="true">
+                <span className="passenger-pinch-hint__finger passenger-pinch-hint__finger--left" />
+                <span className="passenger-pinch-hint__finger passenger-pinch-hint__finger--right" />
+              </div>
+              <span className="text-xs font-semibold text-slate-700">
+                Pellizca para acercar o alejar
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div className="pointer-events-none absolute right-4 top-[50%] z-40 flex -translate-y-1/2 flex-col gap-2">
+          <div className="pointer-events-auto flex flex-col gap-2">
+            <button
+              type="button"
+              onClick={() => setCenterOnUserRequestCount((value) => value + 1)}
+              className="relative flex h-12 w-12 items-center justify-center rounded-full bg-white text-slate-700 shadow-[0_8px_16px_-6px_rgba(15,23,42,0.15)] backdrop-blur transition hover:bg-slate-50"
+              aria-label="Centrar mapa en mi ubicacion"
+              title="Centrar mapa en mi ubicacion"
+            >
+              <LocationTargetIcon />
+            </button>
+          </div>
+        </div>
+
         <PassengerMapHeader
-          routeCount={visibleRouteCount}
-          referencePointCount={visibleReferencePointCount}
-          isRouteFocused={Boolean(selectedRoute)}
-          personalRoutes={personalRoutes}
           onOpenRoutes={handleOpenRoutePicker}
-          onOpenPersonalRoute={handleOpenPersonalRoute}
         />
 
-        <section className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_340px] xl:items-start">
-          <div className="space-y-3">
-            <article
-              ref={mapPanelRef}
-              className={
-                isMapExpanded
-                  ? 'fixed inset-0 z-[1300] overflow-hidden bg-white'
-                  : 'panel overflow-hidden'
-              }
-            >
-              <div className="relative">
-                <div
-                  ref={mapContainerRef}
-                  className={
-                    isMapExpanded
-                      ? 'h-[100svh] w-full'
-                      : 'h-[64svh] min-h-[380px] w-full sm:h-[72svh] xl:h-[calc(100svh-8.5rem)] xl:min-h-[640px]'
-                  }
-                />
-
-                {mapLoadStatus !== 'ready' ? (
-                  <div className="absolute inset-0 z-10 flex items-center justify-center bg-slate-950/5 px-4 text-center">
-                    <div className="max-w-sm rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-[0_18px_35px_-28px_rgba(15,23,42,0.6)] backdrop-blur">
-                      <p className="text-sm font-semibold text-slate-900">Cargando mapa</p>
-                      <p className="mt-1 text-sm text-slate-600">
-                        {mapPerformanceProfile.prefersLiteMap
-                          ? 'MapLibre esta inicializando la base ligera del mapa para movil.'
-                          : 'MapLibre esta inicializando la capa base y los estilos del mapa.'}
-                      </p>
-                    </div>
-                  </div>
-                ) : null}
-
-                <div className="pointer-events-none absolute inset-x-3 top-3 z-10 flex justify-center">
-                  <div
-                    className={`transition-all duration-500 ${
-                      showPinchHint
-                        ? 'translate-y-0 opacity-100'
-                        : '-translate-y-2 opacity-0'
-                    }`}
-                  >
-                    <div className="passenger-pinch-hint rounded-full bg-white/94 px-4 py-2 shadow-[0_14px_28px_-24px_rgba(15,23,42,0.6)] backdrop-blur">
-                      <div className="passenger-pinch-hint__gesture" aria-hidden="true">
-                        <span className="passenger-pinch-hint__finger passenger-pinch-hint__finger--left" />
-                        <span className="passenger-pinch-hint__finger passenger-pinch-hint__finger--right" />
-                      </div>
-                      <span className="text-xs font-semibold text-slate-700">
-                        Pellizca para acercar o alejar
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="pointer-events-none absolute right-3 top-3 z-10 flex items-start justify-end">
-                  <div className="pointer-events-auto flex flex-col gap-2">
-                    <button
-                      type="button"
-                      onClick={handleToggleMapExpanded}
-                      className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-[0_14px_28px_-24px_rgba(15,23,42,0.6)] backdrop-blur transition hover:border-slate-300"
-                      aria-label={isMapExpanded ? 'Salir de pantalla completa' : 'Abrir mapa en pantalla completa'}
-                      title={isMapExpanded ? 'Salir de pantalla completa' : 'Abrir mapa en pantalla completa'}
-                    >
-                      {isMapExpanded ? <FullscreenExitIcon /> : <FullscreenEnterIcon />}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleToggleReferencePoints}
-                      className={`flex h-11 w-11 items-center justify-center rounded-xl border bg-white shadow-[0_14px_28px_-24px_rgba(15,23,42,0.6)] backdrop-blur transition ${
-                        showReferencePoints
-                          ? 'border-amber-200 text-amber-700 hover:border-amber-300'
-                          : 'border-slate-200 text-slate-500 hover:border-slate-300 hover:text-slate-700'
-                      }`}
-                      aria-label={
-                        showReferencePoints
-                          ? 'Ocultar puntos guia del mapa'
-                          : 'Mostrar puntos guia del mapa'
-                      }
-                      title={
-                        showReferencePoints
-                          ? 'Ocultar puntos guia'
-                          : 'Mostrar puntos guia'
-                      }
-                    >
-                      <ReferencePointsIcon active={showReferencePoints} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setCenterOnUserRequestCount((value) => value + 1)}
-                      className="relative flex h-11 w-11 items-center justify-center rounded-xl border border-sky-200 bg-white text-sky-700 shadow-[0_14px_28px_-24px_rgba(15,23,42,0.6)] backdrop-blur transition hover:border-sky-300"
-                      aria-label="Centrar mapa en mi ubicacion"
-                      title="Centrar mapa en mi ubicacion"
-                    >
-                      <LocationTargetIcon />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleOpenInfo}
-                      className="flex h-11 items-center justify-center rounded-full bg-white/92 px-3 text-base font-semibold text-slate-700 shadow-[0_14px_28px_-24px_rgba(15,23,42,0.6)] backdrop-blur transition hover:text-slate-900"
-                      aria-label="Ver ayuda del mapa"
-                    >
-                      i
-                    </button>
-                  </div>
-                </div>
-
-                <div className="pointer-events-none absolute left-3 bottom-3 z-10">
-                  <div className="rounded-full border border-white/80 bg-white/94 px-3 py-2 text-xs font-semibold text-slate-700 shadow-[0_18px_32px_-28px_rgba(15,23,42,0.6)] backdrop-blur">
-                    {showReferencePoints
-                      ? visibleColonyReferencePointCount > 0
-                        ? `${visibleColonyReferencePointCount} colonias · ${visibleGuideReferencePointCount} guias`
-                        : `${visibleReferencePointCount} puntos del mapa`
-                      : 'Puntos del mapa ocultos'}
-                  </div>
-                </div>
-
-                <PassengerMapSelectionSummary
-                  selectedRoute={selectedRoute}
-                  onOpenRoutes={handleOpenRoutePicker}
-                />
-              </div>
-            </article>
-
-            <PassengerMapStopSuggestionButton
-              routeOptions={routeGroupsByUtility.flatMap((group) => group.routes)}
-              selectedRoute={selectedRoute}
-              defaultReportRouteId={
-                selectedRoute?.id ??
-                recommendedRoute?.route.id ??
-                filteredActiveRouteGroup?.routes[0]?.id ??
-                routeGroupsByUtility[0]?.routes[0]?.id ??
-                ''
-              }
-              mapCenter={mapCenter}
-              userPosition={userPosition}
-            />
-          </div>
-
-          <PassengerMapSidebar
-            isRealtimeEnabled={PASSENGER_MAP_REALTIME_ENABLED}
-            routeGroups={routeGroupsByUtility}
-            activeTransportType={activeTransportType}
-            activeRouteGroup={filteredActiveRouteGroup}
-            hasTransportTypeFilter={hasTransportTypeFilter}
-            recommendedRoute={recommendedRoute}
-            nearbyRoutes={nearbyRoutes}
-            permissionState={permissionState}
-            locationStatusCopy={locationStatusCopy}
-            selectedRoute={selectedRoute}
-            routeDistanceById={routeDistanceById}
-            vehicleStatsByRoute={vehicleStatsByRoute}
-            referencePointCountByRoute={referencePointCountByRoute}
-            colonyPointCountByRoute={colonyReferencePointCountByRoute}
-            routeSearchTerm={routeSearchTerm}
-            showOnlyRoutesWithVisibleVehicles={showOnlyRoutesWithVisibleVehicles}
-            canResetView={Boolean(selectedRoute || hasTransportTypeFilter)}
-            onRequestPermission={handleRequestPermission}
-            onFocusRecommended={handleFocusRecommended}
-            onRouteSearchTermChange={handleRouteSearchTermChange}
-            onClearSearch={handleClearSearch}
-            onToggleShowOnlyRoutesWithVisibleVehicles={handleToggleShowOnlyRoutesWithVisibleVehicles}
-            onTransportTypeChange={handleTransportTypeChange}
-            onResetView={handleResetView}
-            onToggleRoute={handleToggleRoute}
-            favoriteRouteIds={favoriteRouteIdSet}
-            onToggleFavoriteRoute={toggleFavoriteRoute}
-            onShowRouteInfo={handleOpenRouteInfo}
-          />
-        </section>
-      </section>
+        <PassengerMapSidebar
+          isRealtimeEnabled={PASSENGER_MAP_REALTIME_ENABLED}
+          routeGroups={routeGroupsByUtility}
+          activeTransportType={activeTransportType}
+          activeRouteGroup={filteredActiveRouteGroup}
+          hasTransportTypeFilter={hasTransportTypeFilter}
+          recommendedRoute={recommendedRoute}
+          nearbyRoutes={nearbyRoutes}
+          permissionState={permissionState}
+          locationStatusCopy={locationStatusCopy}
+          selectedRoute={selectedRoute}
+          routeDistanceById={routeDistanceById}
+          vehicleStatsByRoute={vehicleStatsByRoute}
+          routeSearchTerm={routeSearchTerm}
+          showOnlyRoutesWithVisibleVehicles={showOnlyRoutesWithVisibleVehicles}
+          canResetView={Boolean(selectedRoute || hasTransportTypeFilter)}
+          onRequestPermission={handleRequestPermission}
+          onFocusRecommended={handleFocusRecommended}
+          onRouteSearchTermChange={handleRouteSearchTermChange}
+          onClearSearch={handleClearSearch}
+          onToggleShowOnlyRoutesWithVisibleVehicles={handleToggleShowOnlyRoutesWithVisibleVehicles}
+          onTransportTypeChange={handleTransportTypeChange}
+          onResetView={handleResetView}
+          onToggleRoute={handleToggleRoute}
+          favoriteRouteIds={favoriteRouteIdSet}
+          onToggleFavoriteRoute={toggleFavoriteRoute}
+        />
+      </main>
 
       <PassengerRoutePickerModal
         isOpen={isRoutePickerOpen}
@@ -1989,7 +1716,7 @@ function PassengerMapContent({ snapshot }: { snapshot: PassengerMapSnapshot }) {
         onClearSearch={handleClearSearch}
       />
 
-      {isInfoOpen ? <PassengerMapInfoModal onClose={handleCloseInfo} /> : null}
+
       {routeInfoRoute ? (
         <PassengerRouteInfoModal route={routeInfoRoute} onClose={handleCloseRouteInfo} />
       ) : null}
@@ -2020,7 +1747,7 @@ function PassengerMapConnectedView() {
     return (
       <PassengerMapEmptyState
         title="Cargando datos del mapa"
-        description="Consultando rutas y referencias del mapa desde Convex."
+        description="Consultando rutas y referencias del mapa..."
       />
     )
   }

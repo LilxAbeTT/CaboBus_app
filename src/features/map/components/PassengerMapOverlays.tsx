@@ -717,11 +717,8 @@ export const PassengerRoutePickerModal = memo(function PassengerRoutePickerModal
           <div>
             <p className="eyebrow">Rutas</p>
             <h2 className="mt-2 font-display text-2xl text-slate-900">
-              Elige una ruta
+              ¿A dónde vas?
             </h2>
-            <p className="mt-2 text-sm leading-6 text-slate-600">
-              El fondo ya no se mueve mientras exploras esta lista.
-            </p>
           </div>
           <button
             type="button"
@@ -751,16 +748,33 @@ export const PassengerRoutePickerModal = memo(function PassengerRoutePickerModal
         </div>
 
         <div className="mt-4 space-y-2">
-          <label className="block">
-            <span className="sr-only">Buscar ruta</span>
+          <div className="relative">
+            <label className="sr-only">Buscar ruta</label>
+            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
+              <svg className="h-5 w-5 text-slate-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clipRule="evenodd" />
+              </svg>
+            </div>
             <input
               type="text"
               value={routeSearchTerm}
               onChange={(event) => onRouteSearchTermChange(event.target.value)}
               placeholder="Buscar ruta, colonia o punto clave"
-              className="w-full rounded-[1rem] border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-teal-400"
+              className="w-full rounded-[1rem] border border-slate-200 bg-white py-3 pl-11 pr-10 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-teal-400"
             />
-          </label>
+            {routeSearchTerm ? (
+              <button
+                type="button"
+                onClick={onClearSearch}
+                className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 transition hover:text-slate-600"
+                aria-label="Limpiar busqueda"
+              >
+                <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+                </svg>
+              </button>
+            ) : null}
+          </div>
 
           <div className="flex flex-wrap gap-2">
             {isRealtimeEnabled ? (
@@ -776,16 +790,6 @@ export const PassengerRoutePickerModal = memo(function PassengerRoutePickerModal
                 {showOnlyRoutesWithVisibleVehicles
                   ? 'Solo rutas con unidades visibles'
                   : 'Mostrar solo rutas con unidades visibles'}
-              </button>
-            ) : null}
-
-            {routeSearchTerm ? (
-              <button
-                type="button"
-                onClick={onClearSearch}
-                className="inline-flex min-h-10 items-center justify-center rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:text-slate-900"
-              >
-                Limpiar busqueda
               </button>
             ) : null}
           </div>
@@ -805,36 +809,41 @@ export const PassengerRoutePickerModal = memo(function PassengerRoutePickerModal
                   key={route.id}
                   type="button"
                   onClick={() => onRouteSelect(route.id)}
-                  className={`w-full rounded-[1.3rem] border bg-white px-4 py-4 text-left shadow-sm transition ${
+                  className={`group relative w-full overflow-hidden rounded-[1.3rem] border bg-white px-4 py-4 text-left shadow-sm transition ${
                     isSelected
                       ? 'border-slate-900 shadow-[0_16px_30px_-24px_rgba(15,23,42,0.6)]'
                       : 'border-slate-200 hover:border-teal-300'
                   }`}
                 >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <span
-                        className="block h-2.5 w-14 rounded-full"
-                        style={{ backgroundColor: route.color }}
-                      />
-                      <span className="mt-3 block font-display text-lg text-slate-900">
+                  <div
+                    className="absolute bottom-0 left-0 top-0 w-2.5 transition-opacity"
+                    style={{ backgroundColor: route.color, opacity: isSelected ? 1 : 0.8 }}
+                  />
+                  <div className="flex items-start justify-between gap-3 pl-2">
+                    <div className="min-w-0 flex-1">
+                      <span className="block font-display text-lg text-slate-900">
                         {route.name}
                       </span>
-                      <span className="mt-2 line-clamp-2 block text-sm leading-6 text-slate-600">
+                      <span className="mt-1 line-clamp-2 block text-sm leading-6 text-slate-600">
                         {route.passengerInfo.summary}
                       </span>
                     </div>
-                    <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">
-                      {distanceMeters === null
-                        ? isRealtimeEnabled
-                          ? `${routeStats.visible} activas`
-                          : routeColonyPointCount > 0
-                            ? `${routeColonyPointCount} colonia${routeColonyPointCount === 1 ? '' : 's'}`
-                            : `${routeReferencePointCount} punto${routeReferencePointCount === 1 ? '' : 's'}`
-                        : distanceMeters <= 600
-                          ? 'Cerca'
-                          : formatDistanceRange(distanceMeters)}
-                    </span>
+                    <div className="flex shrink-0 flex-col items-end justify-center gap-2">
+                      <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">
+                        {distanceMeters === null
+                          ? isRealtimeEnabled
+                            ? `${routeStats.visible} activas`
+                            : routeColonyPointCount > 0
+                              ? `${routeColonyPointCount} colonia${routeColonyPointCount === 1 ? '' : 's'}`
+                              : `${routeReferencePointCount} punto${routeReferencePointCount === 1 ? '' : 's'}`
+                          : distanceMeters <= 600
+                            ? 'Cerca'
+                            : formatDistanceRange(distanceMeters)}
+                      </span>
+                      <svg className="mt-1 h-5 w-5 text-slate-300 transition group-hover:text-slate-500" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
+                      </svg>
+                    </div>
                   </div>
                 </button>
               )
@@ -848,15 +857,14 @@ export const PassengerRoutePickerModal = memo(function PassengerRoutePickerModal
           </div>
         </div>
 
-        <div className="mt-4 flex items-center justify-between gap-3">
+        <div className="mt-4 pb-2">
           <button
             type="button"
             onClick={onClearSelection}
-            className="text-sm font-semibold text-slate-600 transition hover:text-slate-900"
+            className="inline-flex min-h-12 w-full items-center justify-center rounded-full bg-slate-100 px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-200 hover:text-slate-900"
           >
-            Ver mapa general
+            Ver todas las rutas
           </button>
-          <p className="text-xs text-slate-500">Toca una ruta para enfocarla.</p>
         </div>
       </div>
     </ModalFrame>

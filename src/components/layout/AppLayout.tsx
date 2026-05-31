@@ -25,7 +25,7 @@ export function AppLayout({ children }: PropsWithChildren) {
           <div className="flex flex-col gap-5 px-4 py-5 sm:px-6 sm:py-6 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex items-center gap-4 pr-0 lg:pr-6">
               <img
-                src="/logo.png"
+                src="/assets/logo.png"
                 alt="CaboBus"
                 className="h-12 w-12 rounded-2xl bg-white/70 p-2 object-contain sm:h-14 sm:w-14"
               />
@@ -69,7 +69,7 @@ export function AppLayout({ children }: PropsWithChildren) {
       <main
         className={
           isHomePage
-            ? 'flex flex-1 items-center py-3 sm:py-6'
+            ? 'flex flex-col flex-1 justify-center py-3 sm:py-6'
             : isPassengerMapPage
               ? 'flex-1 py-0'
               : isDriverFlow
